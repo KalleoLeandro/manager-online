@@ -1,0 +1,14 @@
+target/
+src/main/resources/res/players/
+src/main/resources/res/crests/
+data/
+**/*.mv.db
+**/*.trace.db
+**/*.lock.db
+.mvn/
+.settings/
+.idea/
+.classpath
+.project
+*.log
+.env

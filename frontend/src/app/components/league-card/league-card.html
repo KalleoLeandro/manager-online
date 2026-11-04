@@ -1,0 +1,9 @@
+@let item=access();
+<article class="league-card">
+  <div class="card-top"><span>{{item.room.capacity===1?'LIGA SOLO':'LIGA MULTIPLAYER'}}</span><span>{{me()?.owner?'CRIADOR':'PARTICIPANTE'}}</span></div>
+  <h2>{{item.room.name}}</h2>
+  <p class="club-name">{{me()?.teamName}}</p>
+  <div class="details"><span>Rodada <b>{{item.room.roundNumber}}</b></span><span>{{item.room.members.length}} / {{item.room.capacity}} treinadores</span><span>{{item.room.status==='READY'?'Todos prontos':'Em preparação'}}</span></div>
+  <dl><div><dt>Última atividade</dt><dd>{{(item.room.lastActivityAt|date:'dd/MM/yyyy HH:mm')||'Não informada'}}</dd></div><div><dt>Limite de inatividade</dt><dd>{{(item.room.inactivityExpiresAt|date:'dd/MM/yyyy HH:mm')||'Não informado'}}</dd></div></dl>
+  <footer><button type="button" class="open-league" (click)="open.emit(item)">Entrar na liga ↗</button>@if(me()?.owner){<button type="button" class="delete-league" (click)="remove.emit(item)">Excluir liga</button>}@else{<small>Somente o criador pode excluir.</small>}</footer>
+</article>

@@ -1,0 +1,11 @@
+<div class="roster-heading"><h3>Plantel atual</h3><span>{{ players().length }} atletas</span></div>
+<p class="rating-note">Habilidade e atributos são estimativas do jogo (1–99). Selecione um atleta para ver sua ficha.</p>
+<div class="roster-scroll"><table><thead><tr><th scope="col">Jogador</th><th scope="col">Pos.</th><th scope="col">Hab.</th><th scope="col">Especialidades</th></tr></thead><tbody>
+  @for (player of players(); track player.id) {
+    <tr><td><button type="button" class="athlete player-link" [attr.aria-label]="'Ver detalhes de '+player.name" (click)="profileId.set(player.id)">
+      <app-player-portrait [playerId]="player.id" />
+      <span><strong>{{ player.name }}</strong><small>{{ player.generated ? "Fictício · " : "" }}{{ player.level }} · {{ player.age ? player.age + ' anos' : 'Idade não informada' }}</small></span>
+    </button></td><td><span class="position" [class.goalkeeper]="player.position === 'GOL'">{{ player.position }}</span></td><td class="ability">{{ player.ability }}</td><td><span class="attribute">{{ player.attribute1 }} <b>{{ player.value1 }}</b></span><span class="attribute">{{ player.attribute2 }} <b>{{ player.value2 }}</b></span></td></tr>
+  }
+</tbody></table></div>
+@if(profile();as player){<app-player-details [player]="player" [squad]="players()" [teamName]="teamName()" (closed)="profileId.set(null)"/>}

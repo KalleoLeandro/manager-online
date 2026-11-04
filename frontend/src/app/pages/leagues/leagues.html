@@ -1,0 +1,10 @@
+<div class="leagues-shell">
+  <header><a class="brand" href="#leagues"><span class="brand-icon">M↗</span><span>MANAGER<span class="brand-light">ONLINE</span></span></a><nav aria-label="Ligas"><a href="#new-league">Nova liga ↗</a><a href="#join">Entrar com código</a><a href="#login">Conta</a></nav></header>
+  <main><div class="page-intro"><div><span class="eyeline">SEU FUTEBOL, SUAS HISTÓRIAS</span><h1>Minhas ligas</h1><p>Retome uma liga solo ou reúna seus amigos para a próxima rodada.</p></div><button class="refresh" type="button" [disabled]="loading()" (click)="load()">Atualizar lista</button></div>
+    @if(!account){<p class="guest-note">Estas são as ligas deste navegador. <a href="#login">Entre na sua conta</a> para acessar suas ligas em outros dispositivos.</p>}
+    <app-league-retention-notice />
+    @if(error()){<p role="alert" class="error">{{error()}}</p>}@if(notice()){<p role="status" class="notice">{{notice()}}</p>}
+    @if(loading()){<p role="status">Carregando suas ligas…</p>}@else{<div class="league-grid">@for(item of leagues();track item.room.id){<app-league-card [access]="item" (open)="open($event)" (remove)="pending.set($event)"/>}@empty{<div class="empty-state"><h2>Nenhuma liga encontrada</h2><p>Crie uma liga para jogar sozinho ou com amigos, ou entre usando um código de convite.</p><a href="#new-league">Criar minha liga ↗</a></div>}</div>}
+  </main>
+  @if(pending();as league){<app-league-delete-confirmation [name]="league.room.name" [busy]="deleting()" (cancel)="pending.set(null)" (confirm)="remove()"/>}
+</div>

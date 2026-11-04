@@ -1,0 +1,24 @@
+spring:
+  devtools:
+    restart:
+      enabled: false
+    livereload:
+      enabled: false
+  datasource:
+    url: "jdbc:h2:mem:manager-test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1"
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  sql:
+    init:
+      mode: always
+
+app:
+  leagues:
+    cleanup:
+      enabled: false
+
+logging:
+  level:
+    root: WARN
+    org.springframework: WARN

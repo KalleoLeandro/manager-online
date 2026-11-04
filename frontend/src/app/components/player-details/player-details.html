@@ -1,0 +1,26 @@
+<dialog #dialog aria-labelledby="player-detail-name" (close)="closed.emit()" (click)="backdrop($event)">
+  <header class="profile-top"><span>FICHA DO JOGADOR</span><button type="button" class="close-profile" aria-label="Fechar ficha do jogador" autofocus (click)="close()">×</button></header>
+  <div class="profile-content">
+    <section class="identity">
+      <div class="portrait-frame"><app-player-portrait [playerId]="player().id" /></div>
+      <div class="identity-text"><p class="club-name">{{teamName() || 'Elenco do clube'}}</p><h2 id="player-detail-name">{{player().name}}</h2><p>{{positionName()}} <span>·</span> {{player().level}}</p><div class="badges"><span>{{player().generated?'Jogador fictício':'Jogador real'}}</span>@if(starting()!==null){<span>{{starting()?'Time titular':'Reserva'}}</span>}</div></div>
+      <div class="overall"><strong>{{player().ability}}</strong><span>HABILIDADE BASE / 99</span></div>
+    </section>
+    <dl class="facts">
+      <div><dt>Idade</dt><dd>{{player().age!==null?player().age+' anos':'Não informada'}}</dd></div>
+      <div><dt>Nacionalidade</dt><dd>{{player().nationality || 'Não informada'}}</dd></div>
+      <div><dt>Camisa</dt><dd>{{player().number || 'Não informada'}}</dd></div>
+      <div><dt>Condição física</dt><dd>{{player().fitness!=null?player().fitness+'%':'Não disponível na prévia'}}</dd></div>
+    </dl>
+    <app-player-technical [technical]="player().technical || null" [condition]="player().condition || null" [position]="player().position"/>
+    <section class="profile-section"><h3>Especialidades</h3><p>Os dois atributos de destaque do atleta.</p><div class="specialties">
+      <div><label for="player-attribute-one">{{player().attribute1}} <strong><app-attribute-score [value]="player().value1"/> <small>/ 99</small></strong></label><meter id="player-attribute-one" min="1" max="99" [value]="player().value1">{{player().value1}}</meter></div>
+      <div><label for="player-attribute-two">{{player().attribute2}} <strong><app-attribute-score [value]="player().value2"/> <small>/ 99</small></strong></label><meter id="player-attribute-two" min="1" max="99" [value]="player().value2">{{player().value2}}</meter></div>
+    </div></section>
+    @if(showComparison()){
+    <section class="profile-section"><h3>No elenco</h3><div class="comparison"><div><span>Média de habilidade do elenco</span><strong>{{average()}} <small>/ 99</small></strong></div><div><span>Comparação com a média</span><strong>{{difference()>0?'+':''}}{{difference()}} <small>pontos</small></strong></div><div><span>Por habilidade na posição</span><strong>{{rank()}}º <small>de {{peers().length}}</small></strong></div></div><p>Comparação com os atletas deste elenco. Empates em habilidade compartilham a colocação.</p></section>
+    }
+    <aside class="data-note">@if(player().generated){<p>Atleta fictício criado para completar o elenco. Nome e características foram gerados para o jogo.</p>}<p>Os atributos combinam estimativas do jogo e referências adaptadas, identificadas na ficha. Estatísticas de partidas, contratos e histórico de transferências ainda não estão disponíveis.</p></aside>
+  </div>
+  <footer><button type="button" (click)="close()">Voltar ao elenco</button></footer>
+</dialog>

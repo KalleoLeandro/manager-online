@@ -1,0 +1,20 @@
+<div class="league-tabs" role="group" aria-label="Campeonatos disponíveis">
+  @for (item of countries(); track item.id) {
+    <button type="button" [class.active]="country() === item.country" [attr.aria-pressed]="country() === item.country" (click)="selectLeague(item.id)">{{ item.country }}</button>
+  }
+</div>
+<div class="division-tabs league-tabs" role="group" aria-label="Divisões">
+  @for (item of divisions(); track item.id) { <button type="button" [class.active]="league() === item.id" [attr.aria-pressed]="league() === item.id" (click)="selectLeague(item.id)">{{ item.division }}ª divisão · {{ item.name }} <span>{{ item.teamCount }}</span></button> }
+</div>
+@if (groups().length) { <label>Grupo <select aria-label="Filtrar grupo" [value]="group()" (change)="group.set($any($event.target).value)"><option value="">Todos</option>@for (item of groups(); track item) { <option [value]="item">{{ item }}</option> }</select></label> }
+<label class="search-label" for="team-search">Buscar clube neste campeonato</label>
+<input id="team-search" type="search" placeholder="Nome do clube…" [value]="search()" (input)="search.set($any($event.target).value)">
+<div class="team-grid">
+  @for (team of visible(); track team.id) {
+    <button type="button" class="team-card" [class.selected]="selected() === team.id" [disabled]="occupied().includes(team.id)" [attr.aria-pressed]="selected() === team.id" (click)="choose.emit(team.id)">
+      <img appClubCrest [clubId]="team.id" [alt]="'Escudo do ' + team.name" loading="lazy">
+      <strong>{{ team.shortName }}</strong><span>{{ occupied().includes(team.id) ? 'Já escolhido' : 'Força do elenco' }}</span><b>{{ team.rating }}</b>
+      @if (selected() === team.id) { <i aria-label="Selecionado">✓</i> }
+    </button>
+  } @empty { <p class="muted">Nenhum clube encontrado.</p> }
+</div>

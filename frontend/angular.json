@@ -1,0 +1,38 @@
+{
+  "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
+  "version": 1,
+  "cli": { "analytics": false },
+  "projects": {
+    "manager-online": {
+      "projectType": "application",
+      "root": "",
+      "sourceRoot": "src",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:application",
+          "options": {
+            "outputPath": "dist/manager-online",
+            "index": "src/index.html",
+            "browser": "src/main.ts",
+            "assets": [{ "glob": "*-OFL.txt", "input": "src/assets/fonts", "output": "assets/fonts" }],
+            "tsConfig": "tsconfig.app.json",
+            "styles": ["src/styles.css"]
+          },
+          "configurations": {
+            "production": { "outputHashing": "all", "optimization": { "scripts": true, "styles": { "minify": true, "inlineCritical": false }, "fonts": false } },
+            "development": { "optimization": false, "sourceMap": true }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve": {
+          "builder": "@angular/build:dev-server",
+          "configurations": {
+            "production": { "buildTarget": "manager-online:build:production" },
+            "development": { "buildTarget": "manager-online:build:development" }
+          },
+          "defaultConfiguration": "development"
+        }
+      }
+    }
+  }
+}

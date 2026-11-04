@@ -1,0 +1,36 @@
+spring:
+  application:
+    name: manager-online
+  devtools:
+    restart:
+      additional-exclude: "res/**"
+      poll-interval: 2s
+      quiet-period: 1s
+    livereload:
+      enabled: false
+  config:
+    import:
+      - "optional:file:../.env[.properties]"
+      - "optional:file:.env[.properties]"
+  datasource:
+    url: "${DATABASE_URL:jdbc:postgresql://localhost:${POSTGRES_PORT:5432}/${POSTGRES_DB:manager}}"
+    username: "${DATABASE_USER:${POSTGRES_USER:manager}}"
+    password: "${DATABASE_PASSWORD:${POSTGRES_PASSWORD:}}"
+    driver-class-name: org.postgresql.Driver
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:init.db
+
+server:
+  address: 0.0.0.0
+  port: "${PORT:8080}"
+  error:
+    include-message: never
+    include-stacktrace: never
+
+app:
+  portraits:
+    directory: "${PLAYER_PORTRAITS_DIR:./src/main/resources/res/players}"
+  crests:
+    directory: "${CLUB_CRESTS_DIR:./src/main/resources/res/crests}"

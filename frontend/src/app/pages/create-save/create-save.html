@@ -1,0 +1,36 @@
+<div class="save-shell">
+  <header class="save-top"><a class="brand" href="#new-league"><span class="brand-icon">M<span>↗</span></span><span>MANAGER<span class="brand-light">ONLINE</span></span></a><nav aria-label="Ligas"><a href="#leagues">Minhas ligas</a> · <a href="#login">Conta</a></nav></header>
+  <div class="save-heading"><div><span class="step">PRÉ-TEMPORADA / {{ joined() ? 'ENTRAR NA LIGA' : 'NOVA LIGA' }}</span><h1>Sua história começa<br>na <em>escolha.</em></h1><p>Uma liga com um ou mais treinadores. Cada participante comanda seu clube.</p></div><div class="mode-switch"><button type="button" [class.active]="!joined()" (click)="navigate('new-league')">Criar liga</button><button type="button" [class.active]="joined()" (click)="navigate('join')">Tenho um código</button></div></div>
+  <app-league-retention-notice />
+  <div class="setup-grid">
+    <section class="club-selection"><div class="section-label"><span>01</span><div><h2>Escolha seu clube</h2><p>Seis países, três divisões. Elencos reais com lacunas completadas por atletas fictícios identificados.</p></div></div>
+      @if (joined()) { <div class="invite-search"><label for="invite-code">Código da liga</label><div><input id="invite-code" [(ngModel)]="code" maxlength="12" placeholder="Ex.: AB3D7K9M" (keyup.enter)="findInvite()"><button type="button" [disabled]="loading()" (click)="findInvite()">Buscar liga ↗</button></div>@if (invitation(); as room) { <p>{{ room.name }} · {{ room.members.length }}/{{ room.capacity }} participantes</p><app-live-status [status]="realtime.status()" /> }</div> }
+      @if (catalog(); as data) {
+        @for (policy of data.rosterPolicies; track policy.country) { @if (team() && policy.leagueIds.includes(team()!.leagueId)) { <p class="catalog-note">{{ policy.note }}</p> } }
+        @if (!joined() || invitation()) { <app-save-presence [people]="otherPresence()" /><app-team-picker [teams]="data.teams" [leagues]="data.leagues" [selected]="selected()" [occupied]="occupied()" (choose)="choose($event)" /> }
+        <p class="catalog-note">Base coletada em {{ data.version.slice(0,10) }} · {{ data.source }}<br>{{ data.internationalTeams }} clubes adicionais reservados às competições internacionais. Notas estimadas pelo jogo.</p>
+      } @else { <p class="muted" role="status">Carregando os campeonatos…</p> }
+    </section>
+    <aside class="setup-aside"><div class="configuration"><div class="section-label"><span>02</span><div><h2>{{ joined() ? 'Sua vaga' : 'Sua liga' }}</h2><p>{{ joined() ? 'Assuma um clube disponível.' : capacity === 1 ? 'Uma liga no seu ritmo, sem esperar por amigos.' : 'Você escolhe primeiro e convida depois.' }}</p></div></div>
+      <form (ngSubmit)="submit()">
+        <label for="manager-name">Seu nome de treinador</label><input id="manager-name" name="managerName" [(ngModel)]="managerName" (ngModelChange)="realtime.updatePresence({ name: $event })" minlength="2" maxlength="40" placeholder="Como seus amigos te conhecem?" required>
+        @if (!joined()) {
+          <label for="save-name">Nome da liga</label><input id="save-name" name="saveName" [(ngModel)]="saveName" minlength="2" maxlength="60" required>
+          <label>Modo de jogo</label><div class="play-mode" role="group" aria-label="Modo de jogo">
+            <button type="button" [class.active]="capacity === 1" [attr.aria-pressed]="capacity === 1" (click)="capacity = 1">Jogar sozinho</button>
+            <button type="button" [class.active]="capacity > 1" [attr.aria-pressed]="capacity > 1" (click)="capacity = 4">Com amigos</button>
+          </div>
+          <label for="capacity">Quantidade de participantes</label><select id="capacity" name="capacity" [(ngModel)]="capacity">@for (n of countOptions; track n) { <option [ngValue]="n">{{ n }} {{ n === 1 ? 'treinador (solo)' : 'treinadores' }}</option> }</select>
+          <small>{{ capacity === 1 ? 'Só você confirma quando estiver pronto. Não precisa de convite.' : 'Inclui você. Convide seus amigos depois de escolher o clube.' }}</small>
+        }
+        <div class="selected-club">@if (team(); as club) { <img appClubCrest [clubId]="club.id" alt=""><div><small>SEU CLUBE</small><strong>{{ club.name }}</strong><span>Força {{ club.rating }} / 99</span></div> } @else { <p>← Selecione um clube para ver o plantel.</p> }</div>
+        @if (realtime.error()) { <p class="error" role="alert">{{ realtime.error() }}</p> }@if (error()) { <p class="error" role="alert">{{ error() }}</p> }
+        <button class="primary" type="submit" [disabled]="loading() || !selected() || (joined() && !invitation())"><span>{{ loading() ? 'Salvando…' : joined() ? 'Entrar na liga' : capacity === 1 ? 'Criar liga solo' : 'Criar liga e gerar convite' }}</span><span aria-hidden="true">↗</span></button>
+      </form>
+      @if (lastSave) { <a class="resume" [href]="'#lobby/' + lastSave">Retomar minha última liga →</a> }
+    </div>
+    @if (rosterLoading()) { <p class="muted" role="status">Carregando o plantel…</p> }
+    @if (players().length) { <app-team-roster [players]="players()" [teamName]="team()?.name || ''" /> }
+    </aside>
+  </div>
+</div>

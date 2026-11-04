@@ -1,0 +1,28 @@
+<header class="topbar"><a class="brand" href="/" aria-label="Manager Online, início"><span class="brand-icon">M<span>↗</span></span><span>MANAGER<span class="brand-light">ONLINE</span></span></a><span class="edition"><span class="live-dot"></span> SEU CLUBE. SUA HISTÓRIA. <a href="#new-league" style="color:var(--green);margin-left:12px">Nova liga ↗</a></span></header>
+<main>
+  <section class="story" aria-labelledby="hero-title">
+    <div class="eyebrow"><span></span> O PRÓXIMO GRANDE TREINADOR É VOCÊ</div>
+    <h1 id="hero-title">O futebol é um jogo.<br>A glória é <em>sua.</em></h1>
+    <p class="intro">Monte seu elenco. Encontre sua tática.<br>Transforme a rivalidade com seus amigos em história.</p>
+    <div class="pitch-art" aria-hidden="true"><div class="pitch"><div class="halfway"></div><div class="circle"></div><div class="box box-top"></div><div class="box box-bottom"></div><span class="player p1">9</span><span class="player p2">11</span><span class="player p3">7</span><span class="player p4">10</span><span class="player p5">8</span><span class="player p6">5</span><span class="player p7">6</span><span class="player p8">4</span><span class="player p9">3</span><span class="player p10">2</span><span class="player p11 keeper">1</span></div><div class="tactic-tag"><span class="live-dot"></span> VISÃO DE JOGO <strong>4–3–3</strong></div></div>
+    <div class="story-footer"><span class="mini-icon">↗</span><p>Grandes conquistas começam<br><strong>com uma boa decisão.</strong></p><span class="season">EST. 2026</span></div>
+  </section>
+<div>
+@if (registering()) {
+  <app-registration /><p class="access-switch">Já tem uma conta? <button type="button" (click)="registering.set(false)">Entrar</button></p>
+} @else {
+  <section class="registration" aria-labelledby="login-title">
+    <div class="form-heading"><span class="step">BEM-VINDO DE VOLTA</span><h2 id="login-title">O seu clube<br>está esperando.</h2><p>Entre para continuar sua história com os amigos.</p></div>
+    <form id="login-form" [formGroup]="form" (ngSubmit)="submit()">
+      <div class="field"><label for="login-email">E-mail</label><input id="login-email" type="email" formControlName="email" autocomplete="username" maxlength="254" placeholder="voce@exemplo.com" required></div>
+      <div class="field"><label for="login-password">Senha</label><input id="login-password" type="password" formControlName="password" autocomplete="current-password" maxlength="128" placeholder="Sua senha" required></div>
+      @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
+      <button id="login-submit" class="primary" type="submit" [disabled]="loading()"><span>{{ loading() ? 'Entrando…' : 'Entrar' }}</span><span aria-hidden="true">↗</span></button>
+    </form>
+    <p class="access-switch">Primeira vez aqui? <button type="button" (click)="registering.set(true)">Criar conta</button></p>
+  </section>
+}
+</div>
+</main>
+<nav class="entry-links" aria-label="Acesso às ligas"><a href="#leagues">Minhas ligas ↗</a><a href="#new-league">Criar uma liga ↗</a><a href="#join">Entrar com código →</a></nav>
+<footer class="footer"><span>© 2026 Manager Online</span><span>Paixão pelo jogo. Obsessão pela vitória.</span><span>FEITO PARA JOGAR JUNTO <span aria-hidden="true">↗</span></span></footer>

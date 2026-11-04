@@ -1,0 +1,30 @@
+@if(technical();as profile){
+  <section class="technical-profile" aria-label="Atributos e condição do jogador">
+    <div class="profile-navigation" role="group" aria-label="Informações técnicas"><button type="button" [class.active]="view()==='attributes'" [attr.aria-pressed]="view()==='attributes'" (click)="view.set('attributes')">Atributos</button><button type="button" [class.active]="view()==='condition'" [attr.aria-pressed]="view()==='condition'" (click)="view.set('condition')">Condição de jogo</button></div>
+    @if(view()==='attributes'){
+      <div class="technical-summary"><div class="radar"><svg viewBox="0 0 220 220" role="img" aria-label="Perfil de ataque, passe, defesa, físico, mental e bolas paradas">
+        @for(level of [25,50,75,100];track level){<polygon class="radar-grid" [attr.points]="[point(level,0),point(level,1),point(level,2),point(level,3),point(level,4),point(level,5)].join(' ')"/>}
+        @for(axis of axes();track axis.name;let i=$index){<line class="radar-axis" x1="110" y1="110" [attr.x2]="point(100,i).split(',')[0]" [attr.y2]="point(100,i).split(',')[1]"/><text [attr.x]="label(i).x" [attr.y]="label(i).y" text-anchor="middle">{{axis.name}}</text>}
+        <polygon class="radar-base" [attr.points]="basePolygon()"/>
+        @if(condition()&&condition()!.available&&condition()!.performanceFactor<1){<polygon class="radar-current" [attr.points]="currentPolygon()"/>}
+      </svg><p><i></i> Capacidade base @if(condition()&&condition()!.performanceFactor<1){<span>◌ Rendimento atual</span>}</p></div>
+      <div class="technical-context"><span>POTENCIAL ESTIMADO</span><strong>{{profile.potential}}<small> / 99</small></strong><p>O atleta pode evoluir em cada atributo. Desgaste e lesões afetam o rendimento em campo, sem reduzir seus atributos de base.</p>@if(condition();as state){<div class="availability" [class.unavailable]="!state.available">{{status()}} <b>{{state.available?state.effectiveAbility:'—'}}</b><small>Habilidade atual</small></div>}</div></div>
+      <div class="attribute-navigation" role="group" aria-label="Grupo de atributos">@for(item of groups;track item.id){<button type="button" [class.active]="group()===item.id" [attr.aria-pressed]="group()===item.id" (click)="selectGroup(item.id)">{{item.name}}</button>}</div>
+      <table class="attribute-table">
+        <thead><tr><th scope="col">Atributo</th><th aria-label="Barra do atributo base"></th><th scope="col">Base</th>@if(condition()){<th scope="col">Em campo</th>}</tr></thead>
+        <tbody>@for(field of fields();track field.key){
+          <tr>
+            <td><span class="attribute-origin" [class.sourced]="sources().has(field.key)" [title]="sources().has(field.key)?'Referência adaptada ao equilíbrio do jogo':'Estimado pelo jogo'" [attr.aria-label]="sources().has(field.key)?'Referência adaptada':'Estimativa'"></span>{{field.label}}</td>
+            <td class="attribute-meter"><meter min="1" max="99" [value]="value(field.key)" [attr.aria-label]="field.label"></meter></td>
+            <td class="attribute-number"><app-attribute-score [value]="value(field.key)"/></td>
+            @if(condition()){<td class="attribute-number"><app-attribute-score [value]="current(field.key)"/></td>}
+          </tr>
+        }</tbody>
+      </table>
+      <p class="source-legend"><span><i class="estimated-dot"></i> Estimado pelo jogo</span>@if(profile.sourcedAttributes.length){<span><i class="sourced-dot"></i> {{profile.sourceName}} · referência ajustada à escala do jogo</span>}</p>
+    }@else{
+      @if(condition();as state){<div class="condition-summary" [class.unavailable]="!state.available"><h3>{{status()}}</h3><p>{{state.available?'Disponível para a escalação.':'Este jogador não pode ser escalado no momento.'}}</p></div><div class="condition-bars">@for(item of [{label:'Condição física',value:state.fitness},{label:'Ritmo de jogo',value:state.sharpness},{label:'Moral',value:state.morale}];track item.label){<div><label>{{item.label}}<strong>{{item.value}}%</strong></label><meter min="0" max="100" [value]="item.value" [attr.aria-label]="item.label"></meter></div>}</div>@if(state.injuryName){<div class="injury-note"><strong>{{state.injuryName}}</strong><p>{{state.returnRound?'Retorno previsto na rodada '+state.returnRound+'.':'Retorno ainda sem previsão nesta liga.'}}</p></div>}<p class="condition-help">Abaixo de 40% de condição física ou com lesão ativa, o atleta fica indisponível. Resistência e resistência a lesões são atributos permanentes; condição, ritmo e moral representam o estado dele nesta liga.</p>}
+      @else{<p class="condition-help">O estado físico, as lesões e o rendimento em campo são acompanhados dentro de cada liga.</p>}
+    }
+  </section>
+}

@@ -1,0 +1,11 @@
+**
+!backend/
+!backend/pom.xml
+!backend/src/
+!backend/src/**
+!database/
+!database/init.db
+backend/src/main/resources/res/players/
+backend/src/main/resources/res/crests/
+backend/src/main/resources/db/catalog-*.sql
+backend/src/main/resources/db/player-profiles-source.sql

@@ -1,0 +1,2 @@
+export function dateLabel(date:string,options:Intl.DateTimeFormatOptions):string{return new Intl.DateTimeFormat('pt-BR',{...options,timeZone:'UTC'}).format(new Date(date+'T12:00:00Z'));}
+export function weekDates(start:string):string[]{const date=new Date(start+'T12:00:00Z');return Array.from({length:7},(_,i)=>{const day=new Date(date);day.setUTCDate(date.getUTCDate()+i);return day.toISOString().slice(0,10);});}

@@ -1,0 +1,15 @@
+<section class="registration" aria-labelledby="form-title">
+  <div class="form-heading"><span class="step">01 / PRIMEIRO APITO</span><h2 id="form-title">Seu lugar à beira<br>do campo.</h2><p>Crie sua conta e comece sua carreira de treinador.</p></div>
+    <form id="register-form" [formGroup]="form" (ngSubmit)="submit()">
+      <div class="photo-upload"><app-manager-avatar [photoUrl]="photoData()"/><div><label for="manager-photo">Foto do treinador <small>(opcional)</small></label><input #photoInput id="manager-photo" type="file" accept="image/png,image/jpeg,image/webp" [disabled]="loading()||preparingPhoto()" (change)="selectPhoto($event)"><p>{{preparingPhoto()?'Preparando a foto…':'PNG, JPEG ou WebP · até 5 MB. Sem foto, será usado o ícone padrão.'}}</p>@if(photoData()){<button type="button" [disabled]="loading()" (click)="photoData.set(null);photoInput.value=''">Usar ícone padrão</button>}</div></div>
+      <div class="field"><label for="name">Nome</label><input id="name" formControlName="name" autocomplete="given-name" placeholder="Seu nome" minlength="2" maxlength="40" required></div>
+      <div class="field"><label for="last-name">Sobrenome</label><input id="last-name" formControlName="lastName" autocomplete="family-name" placeholder="Seu sobrenome" maxlength="40" required><small>Nome e sobrenome juntos: até 40 caracteres.</small></div>
+      <div class="field"><label for="email">E-mail</label><input id="email" formControlName="email" type="email" autocomplete="email" inputmode="email" maxlength="254" placeholder="voce@exemplo.com" required></div>
+      <app-password-field fieldId="password" label="Senha" placeholder="Crie uma senha segura" hint="Use pelo menos 8 caracteres." [control]="form.controls.password" />
+      <app-password-field fieldId="confirmation" label="Confirme sua senha" placeholder="Repita sua senha" [control]="form.controls.passwordConfirmation" />
+      @if (error()) { <p id="form-error" class="error" role="alert">{{ error() }}</p> }
+      <button id="submit" class="primary" type="submit" [disabled]="loading()||preparingPhoto()" [attr.aria-busy]="loading()"><span>{{ loading() ? 'Criando sua conta…' : 'Criar minha conta' }}</span><span aria-hidden="true">↗</span></button>
+      <p class="privacy-note"><span aria-hidden="true">◇</span> Sua senha é protegida e nunca é salva em texto puro.</p>
+    </form>
+  <div class="form-bottom"><span class="live-dot"></span> Uma nova carreira começa aqui.</div>
+</section>

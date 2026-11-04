@@ -1,0 +1,12 @@
+:host { display: inline-block; }
+.score {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.25;
+}
+.low { color: #b87848; }
+.regular { color: #454545; }
+.high { color: #8bc58b; }
+.excellent { color: #c56868; }
+.missing { color: inherit; }

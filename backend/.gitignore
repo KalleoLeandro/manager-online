@@ -1,0 +1,23 @@
+/target/
+/data/
+*.mv.db
+*.trace.db
+*.lock.db
+*.log
+.env
+.idea/
+.settings/
+.classpath
+.project
+
+# Private catalog loads belong to each installation.
+/src/main/resources/db/catalog-*.sql
+/src/main/resources/db/player-profiles-source.sql
+
+# Downloaded and manually supplied player portraits stay local.
+/src/main/resources/res/players/*
+!/src/main/resources/res/players/README.md
+
+# Downloaded and manually supplied club crests stay local.
+/src/main/resources/res/crests/*
+!/src/main/resources/res/crests/README.md

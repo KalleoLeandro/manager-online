@@ -1,0 +1,6 @@
+<section class="inbox" aria-label="Mensagens do clube">
+  <div class="inbox-list"><header><span>CENTRAL DO CLUBE</span><h2>Caixa de mensagens <small>{{messages().length}}</small></h2></header>
+    <nav aria-label="Lista de mensagens">@for(message of messages();track message.id){<button type="button" [class.selected]="selected().id===message.id" [attr.aria-pressed]="selected().id===message.id" (click)="selectedId.set(message.id)"><span>{{message.sender}}</span><strong>{{message.title}}</strong><small>Rodada {{room().roundNumber}} <i>→</i></small></button>}</nav>
+  </div>
+  <article class="message-detail" aria-live="polite"><div class="message-meta"><span>✉ {{selected().sender}}</span><span>Rodada {{room().roundNumber}}</span></div><h2>{{selected().title}}</h2><p>{{selected().body}}</p><button type="button" (click)="navigate.emit(selected().page)">{{selected().action}} <span>↗</span></button><footer>Avisos do sistema com base no estado atual do clube e da liga.</footer></article>
+</section>

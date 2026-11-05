@@ -30,7 +30,13 @@ server:
     include-stacktrace: never
 
 app:
+  matchday:
+    tick-millis: 6000
+    narrated-pacing: true
   portraits:
     directory: "${PLAYER_PORTRAITS_DIR:./src/main/resources/res/players}"
   crests:
     directory: "${CLUB_CRESTS_DIR:./src/main/resources/res/crests}"
+
+  trophies:
+    directory: "${TROPHY_IMAGES_DIR:./src/main/resources/res/trophies}"

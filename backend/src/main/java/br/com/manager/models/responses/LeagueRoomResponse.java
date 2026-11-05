@@ -14,5 +14,6 @@ public record LeagueRoomResponse(
     int roundNumber,
     List<LeagueMemberDto> members,
     Instant lastActivityAt,
-    Instant inactivityExpiresAt
+    Instant inactivityExpiresAt,
+    boolean localMultiplayer
 ) {}

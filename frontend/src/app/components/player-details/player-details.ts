@@ -1,3 +1,4 @@
+import {positionFit} from '../../utils/player-positions';
 import { PlayerTechnicalDetails } from '../player-technical/player-technical';
 import { AttributeScore } from '../attribute-score/attribute-score';
 import { PlayerCondition } from '../../utils/player-attributes';
@@ -12,7 +13,7 @@ export class PlayerDetails implements AfterViewInit {
   readonly player=input.required<PlayerProfile>();
   readonly squad=input.required<PlayerProfile[]>();
   readonly teamName=input('');
-  readonly starting=input<boolean|null>(null);
+  readonly starting=input<boolean|null>(null);readonly assignedPosition=input<string|null>(null);readonly positionFactor=computed(()=>this.assignedPosition()?positionFit(this.player(),this.assignedPosition()!):1);readonly positionPercent=computed(()=>Math.round(this.positionFactor()*100));
   readonly showComparison=input(true);
   readonly closed=output<void>();
   private readonly dialog=viewChild.required<ElementRef<HTMLDialogElement>>('dialog');

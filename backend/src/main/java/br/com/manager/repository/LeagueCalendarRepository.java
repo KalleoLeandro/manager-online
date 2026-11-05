@@ -36,7 +36,7 @@ public class LeagueCalendarRepository {
 
     public List<CalendarEventDto> events(String id, Long team, LocalDate start, LocalDate end) {
         return db.query(
-            "SELECT id,event_date,event_type,title,description,status FROM league_calendar_events WHERE save_id=:id AND (team_id IS NULL OR team_id=:team) AND event_date BETWEEN :start AND :end ORDER BY event_date,id LIMIT 100",
+            "SELECT id,event_date,event_type,title,description,status FROM league_calendar_events WHERE save_id=:id AND (team_id IS NULL OR team_id=:team) AND event_date BETWEEN :start AND :end ORDER BY event_date,id",
             new MapSqlParameterSource("id", id).addValue("team", team).addValue("start", start).addValue("end", end),
             EVENT_ROW_MAPPER
         );

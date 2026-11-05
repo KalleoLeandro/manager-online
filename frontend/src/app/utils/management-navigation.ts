@@ -1,4 +1,5 @@
 export const managementPages = {
+  calendar:{title:'Calendário da temporada.',description:'Todos os eventos do clube, mês a mês, até o fim da temporada.'},
   championship:{title:'Campeonato nacional.',description:'Confrontos e calendário de cada temporada da sua liga.'},
   "messages": {
     "title": "Mensagens.",
@@ -64,9 +65,10 @@ export const managementPages = {
     "title": "Opções.",
     "description": "Preferências de apresentação e acesso às suas ligas."
   },
+  "competitions": {"title":"Competições do mundo.","description":"Calendário, classificações e resultados das competições da liga."},
   "clubs": {
-    "title": "Outros times da liga.",
-    "description": "Consulte clubes e elencos adversários."
+    "title": "Clubes do mundo.",
+    "description": "Explore times de outros países, campeonatos e divisões."
   },
   "finance": {
     "title": "Finanças do clube.",
@@ -76,6 +78,7 @@ export const managementPages = {
 export type ManagementPage = keyof typeof managementPages;
 export interface ManagementMenu { id: ManagementPage; icon: string; name: string; pages: ManagementPage[]; links: {id:ManagementPage;name:string}[] }
 export const managementNavigation: ManagementMenu[] = [
+  {id:'calendar',icon:'',name:'Calendário',links:[],pages:['calendar']},
   {
     "id": "messages",
     "icon": "✉",
@@ -143,6 +146,10 @@ export const managementNavigation: ManagementMenu[] = [
     "name": "Clube",
     "links": [
       {
+        "id": "finance",
+        "name": "Finanças e contratos"
+      },
+      {
         "id": "staff",
         "name": "Staff"
       },
@@ -153,7 +160,12 @@ export const managementNavigation: ManagementMenu[] = [
       {
         "id": "titles",
         "name": "Títulos"
-      }
+      },
+      {
+        "id": "clubs",
+        "name": "Clubes do mundo"
+      },
+      {"id":"competitions","name":"Competições do mundo"}
     ],
     "pages": [
       "details",
@@ -162,6 +174,7 @@ export const managementNavigation: ManagementMenu[] = [
       "details",
       "titles",
       "clubs",
+      "competitions",
       "finance"
     ]
   },

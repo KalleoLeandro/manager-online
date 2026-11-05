@@ -47,6 +47,7 @@ export class CreateSave implements OnInit {
   saveName = 'Liga dos amigos';
   managerName = readLocal<string>('manager-name') || '';
   capacity = 4;
+  localMultiplayer = false;
   code = currentPath().split('/')[1] || '';
   navigate = navigate;
 
@@ -77,7 +78,7 @@ export class CreateSave implements OnInit {
     this.loading.set(true);
     const request = this.joined()
       ? this.saves.join(this.invitation()!.inviteCode, this.managerName.trim(), this.selected()!)
-      : this.saves.create({ name: this.saveName.trim(), managerName: this.managerName.trim(), capacity: +this.capacity, teamId: this.selected()! });
+      : this.saves.create({ name: this.saveName.trim(), managerName: this.managerName.trim(), capacity: +this.capacity, teamId: this.selected()!, localMultiplayer: this.capacity>1&&this.localMultiplayer });
     request.pipe(finalize(() => this.loading.set(false))).subscribe({ next: access => {
       writeLocal('manager-name',this.managerName.trim()); navigate(`lobby/${access.room.id}`);
     }, error: e => this.error.set(e.error?.message || 'Não foi possível salvar. Verifique a conexão e tente novamente.') });

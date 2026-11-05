@@ -29,7 +29,7 @@ public class PlayerProfilesService {
     public void requireAvailableStarters(String saveId, String memberId) {
         if (!repository.unavailableStarters(saveId, memberId).isEmpty()) throw new DefaultErrorException(
             HttpStatus.CONFLICT,
-            "Há titulares lesionados ou sem condição de jogo. Ajuste a escalação antes de confirmar."
+            "Há titulares lesionados, suspensos ou sem condição de jogo. Ajuste a escalação antes de confirmar."
         );
     }
 }

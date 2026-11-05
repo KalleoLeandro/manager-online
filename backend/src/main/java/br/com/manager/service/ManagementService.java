@@ -20,16 +20,13 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class ManagementService {
 
-    public static final Map<String, List<String>> FORMATIONS = Map.of(
-        "4-3-3",
-        List.of("GOL", "DEF", "DEF", "DEF", "DEF", "MEI", "MEI", "MEI", "ATA", "ATA", "ATA"),
-        "4-4-2",
-        List.of("GOL", "DEF", "DEF", "DEF", "DEF", "MEI", "MEI", "MEI", "MEI", "ATA", "ATA"),
-        "3-5-2",
-        List.of("GOL", "DEF", "DEF", "DEF", "MEI", "MEI", "MEI", "MEI", "MEI", "ATA", "ATA"),
-        "4-5-1",
-        List.of("GOL", "DEF", "DEF", "DEF", "DEF", "MEI", "MEI", "MEI", "MEI", "MEI", "ATA")
-    );
+    public static final Map<String, List<String>> FORMATIONS = br.com.manager.utils.FormationRules.ROLES.entrySet()
+        .stream()
+        .collect(
+            java.util.stream.Collectors.toMap(Map.Entry::getKey, e ->
+                e.getValue().stream().map(br.com.manager.utils.FormationRules::family).toList()
+            )
+        );
     private final ManagementRepository repository;
     private final SaveRepository leagues;
     private final SaveService saves;
@@ -91,17 +88,24 @@ public class ManagementService {
             settings.mentality(),
             lineup,
             settings.version(),
-            repository.introductionSeen(id, member.id())
+            repository.introductionSeen(id, member.id()),
+            settings.tacticalPlan()
         );
     }
 
     private List<Long> suggest(List<ManagedPlayerDto> players, String formation) {
         var chosen = new ArrayList<Long>();
-        for (var position : FORMATIONS.get(formation)) {
+        for (var position : br.com.manager.utils.FormationRules.ROLES.get(formation)) {
             var player = players
                 .stream()
-                .filter(p -> p.position().equals(position) && p.condition().available() && !chosen.contains(p.id()))
-                .sorted(Comparator.comparingInt((ManagedPlayerDto p) -> p.condition().effectiveAbility()).reversed())
+                .filter(p -> p.condition().available() && !chosen.contains(p.id()))
+                .sorted(
+                    Comparator.comparingDouble(
+                        (ManagedPlayerDto p) ->
+                            p.condition().effectiveAbility() *
+                            br.com.manager.utils.PlayerPositionRules.fit(p.position(), p.positions(), position)
+                    ).reversed()
+                )
                 .findFirst();
             chosen.add(player.map(ManagedPlayerDto::id).orElse(0L));
         }
@@ -119,6 +123,9 @@ public class ManagementService {
         var member = member(id, header);
         leagues.lock(id);
         member = member(id, header);
+        if (saves.room(id).status().equals("LIVE")) conflict(
+            "Use a tela da partida para alterar o time durante o jogo."
+        );
         if (member.ready()) conflict("Volte à preparação antes de alterar sua escalação.");
         var current = state(id, member);
         if (current.version() != input.version()) conflict(
@@ -138,9 +145,15 @@ public class ManagementService {
                 current
                     .players()
                     .stream()
-                    .noneMatch(p -> p.id().equals(playerId) && p.position().equals(role) && p.condition().available())
+                    .noneMatch(p -> p.id().equals(playerId) && p.condition().available())
             ) bad("Escolha um jogador disponível do seu elenco na posição indicada para cada vaga.");
         }
+        var starters = new LinkedHashMap<Long, String>();
+        for (int i = 0; i < input.lineup().size(); i++) starters.put(input.lineup().get(i), roles.get(i));
+        var plan = br.com.manager.utils.TacticalPlanRules.validate(
+            input.tacticalPlan() == null ? current.tacticalPlan() : input.tacticalPlan(),
+            starters
+        );
         if (current.version() == 0) repository.createSettings(
             id,
             member.teamId(),
@@ -149,6 +162,7 @@ public class ManagementService {
         );
         else repository.updateSettings(id, member.teamId(), input.formation(), input.mentality());
         repository.replaceLineup(id, member.teamId(), input.lineup());
+        repository.savePlan(id, member.teamId(), plan);
         events.publishEvent(new TeamUpdatedEvent(id, member.teamId(), current.version() + 1));
         return state(id, member);
     }

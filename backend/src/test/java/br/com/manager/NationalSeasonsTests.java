@@ -110,6 +110,10 @@ class NationalSeasonsTests {
         var token = "Bearer " + access.accessToken();
         var result = championships.championship(id, token, null);
         assertThat(result.season().label()).isEqualTo("2026");
+        assertThat(result.season().firstDate()).isEqualTo(LocalDate.of(2026, 1, 28));
+        assertThat(result.season().lastDate()).isEqualTo(LocalDate.of(2026, 12, 2));
+        var initial = db.queryForObject("SELECT calendar_start_date FROM game_saves WHERE id=?", LocalDate.class, id);
+        assertThat(initial).isEqualTo(LocalDate.of(2026, 1, 1));
         assertThat(result.fixtures()).hasSize(380);
         var match = result
             .fixtures()
@@ -117,11 +121,58 @@ class NationalSeasonsTests {
             .filter(f -> f.homeTeamId().equals(team.id()) || f.awayTeamId().equals(team.id()))
             .findFirst()
             .orElseThrow();
-        int day = (int) ChronoUnit.DAYS.between(LocalDate.of(2026, 7, 1), match.date()) + 1;
+        int day = (int) ChronoUnit.DAYS.between(initial, match.date()) + 1;
         db.update("UPDATE game_saves SET round_number=? WHERE id=?", day, id);
         assertThat(calendar.week(id, token).events()).anyMatch(
             e -> e.type().equals("MATCH") && e.title().contains(team.name())
         );
+        for (boolean home : java.util.List.of(true, false)) {
+            var fixture = result
+                .fixtures()
+                .stream()
+                .filter(f -> home ? f.homeTeamId().equals(team.id()) : f.awayTeamId().equals(team.id()))
+                .findFirst()
+                .orElseThrow();
+            int fixtureDay = (int) ChronoUnit.DAYS.between(initial, fixture.date()) + 1;
+            db.update("UPDATE game_saves SET round_number=? WHERE id=?", fixtureDay, id);
+            var event = calendar
+                .week(id, token)
+                .events()
+                .stream()
+                .filter(e -> e.id().equals("national-" + fixture.id()))
+                .findFirst()
+                .orElseThrow();
+            assertThat(event.opponentTeamId()).isEqualTo(home ? fixture.awayTeamId() : fixture.homeTeamId());
+            assertThat(event.opponentTeamName()).isEqualTo(home ? fixture.awayTeamName() : fixture.homeTeamName());
+            assertThat(event.venue()).isEqualTo(home ? "C" : "V");
+        }
         assertThat(result.fixtures()).allMatch(f -> f.date().getYear() == 2026);
+    }
+
+    @Test
+    void joiningBrazilToAnUnstartedEuropeanRoomMovesItsStartToJanuary() {
+        var european = saves.create(
+            new CreateLeagueRequest("Mixed calendar", 2, "European", catalog.teams(1L).getFirst().id())
+        );
+        var brazilian = saves.join(
+            european.room().inviteCode(),
+            new JoinLeagueRequest("Brazilian", catalog.teams(6L).getFirst().id())
+        );
+        var id = european.room().id();
+        assertThat(
+            db.queryForObject("SELECT calendar_start_date FROM game_saves WHERE id=?", LocalDate.class, id)
+        ).isEqualTo(LocalDate.of(2026, 1, 1));
+        assertThat(
+            championships
+                .championship(id, "Bearer " + brazilian.accessToken(), null)
+                .season()
+                .firstDate()
+        ).isEqualTo(LocalDate.of(2026, 1, 28));
+        assertThat(
+            championships
+                .championship(id, "Bearer " + european.accessToken(), null)
+                .season()
+                .firstDate()
+        ).isEqualTo(LocalDate.of(2026, 8, 1));
     }
 }

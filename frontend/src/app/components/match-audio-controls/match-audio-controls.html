@@ -1,0 +1,5 @@
+<div class="audio-controls"><button type="button" [disabled]="audio.loading()" [attr.aria-pressed]="audio.enabled()" (click)="audio.toggle()"><app-game-icon [name]="audio.enabled()?'volume':'muted'"/><span>{{audio.loading()?'Carregando som…':audio.enabled()?'Desativar som':'Ativar som'}}</span></button><label><span>Volume</span><input class="volume-slider" type="range" min="0" max="1" step="0.05" aria-label="Volume dos efeitos sonoros" [ngModel]="audio.volume()" (ngModelChange)="audio.setVolume(+$event)"></label></div>@if(audio.error()){<small role="status">{{audio.error()}}</small>}
+
+<a class="audio-credits" href="/assets/audio/CREDITS.txt" target="_blank" rel="noopener noreferrer">Créditos do áudio ↗</a>
+
+@if(audio.enabled()&&audio.ready()&&audio.waitingGesture()){<small role="status">Toque na tela para liberar o som.</small>}

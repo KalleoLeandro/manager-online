@@ -28,7 +28,7 @@ public class NationalChampionshipService {
     public NationalChampionshipResponse championship(String id, String token, Integer year) {
         var room = saves.authorizedRoom(id, token);
         var member = saves.realtimeMember(id, token.substring(7));
-        var date = repository.start(id).plusDays(Math.max(0, room.roundNumber() - 1L));
+        var date = repository.start(id).plusDays(Math.max(0, repository.teamDay(id,member.teamId()) - 1L));
         seasons.ensureForDate(id, date);
         var history = repository.seasons(id, member.teamId());
         var selected = history

@@ -29,6 +29,7 @@ public class SaveService {
     private final LeagueLifecycleService lifecycle;
     private final PlayerProfilesService profiles;
     private final NationalSeasonService seasons;
+    private final FinanceService finances;
     private final SecureRandom random = new SecureRandom();
 
     public SaveService(
@@ -39,7 +40,8 @@ public class SaveService {
         AuthService auth,
         LeagueLifecycleService lifecycle,
         PlayerProfilesService profiles,
-        NationalSeasonService seasons
+        NationalSeasonService seasons,
+        FinanceService finances
     ) {
         this.repository = repository;
         this.policies = policies;
@@ -49,12 +51,21 @@ public class SaveService {
         this.lifecycle = lifecycle;
         this.profiles = profiles;
         this.seasons = seasons;
+        this.finances = finances;
     }
 
     @Transactional
     public LeagueAccessResponse createForAccount(CreateLeagueRequest input, String header) {
         var manager = auth.require(header);
-        var access = create(new CreateLeagueRequest(input.name(), input.capacity(), manager.name(), input.teamId()));
+        var access = create(
+            new CreateLeagueRequest(
+                input.name(),
+                input.capacity(),
+                manager.name(),
+                input.teamId(),
+                input.localMultiplayer()
+            )
+        );
         repository.attachAccount(access.memberId(), manager.id());
         return access;
     }
@@ -88,6 +99,10 @@ public class SaveService {
 
     @Transactional
     public LeagueAccessResponse create(CreateLeagueRequest input) {
+        if (input.localMultiplayer() && input.capacity() > 8) fail(
+            HttpStatus.BAD_REQUEST,
+            "O multiplayer local permite no máximo 8 treinadores."
+        );
         validateName(input.name(), 2);
         validateName(input.managerName(), 2);
         if (
@@ -102,7 +117,9 @@ public class SaveService {
             code = code();
         } while (repository.codeExists(code));
         repository.create(id, input.name().strip(), code, input.capacity(), catalog.version(), lifecycle.now());
+        repository.localMultiplayer(id, input.capacity() > 1 && input.localMultiplayer());
         repository.snapshotCatalog(id);
+        repository.initialCalendar(id, input.teamId());
         policies.snapshot(id);
         return addMember(id, input.managerName(), input.teamId(), true);
     }
@@ -113,6 +130,50 @@ public class SaveService {
         var room = byCode(code);
         lock(room.id());
         room = room(room.id());
+        if (room.localMultiplayer()) fail(
+            HttpStatus.FORBIDDEN,
+            "Os participantes locais são cadastrados pelo criador no mesmo aparelho."
+        );
+        return joinRoom(room, input);
+    }
+
+    @Transactional
+    public LeagueAccessResponse addLocal(String id, String header, JoinLeagueRequest input) {
+        lock(id);
+        requireLocalOwner(id, header);
+        validateName(input.managerName(), 2);
+        return joinRoom(room(id), input);
+    }
+
+    @Transactional
+    public LeagueAccessResponse switchLocal(String id, String header, String memberId) {
+        lock(id);
+        requireLocalOwner(id, header);
+        var room = room(id);
+        var target = room
+            .members()
+            .stream()
+            .filter(m -> m.id().equals(memberId))
+            .findFirst()
+            .orElseThrow(() -> new DefaultErrorException(HttpStatus.NOT_FOUND, "Treinador não encontrado nesta liga."));
+        if (target.owner()) return new LeagueAccessResponse(room, memberId, header.substring(7));
+        byte[] bytes = new byte[32];
+        random.nextBytes(bytes);
+        var token = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+        repository.memberToken(id, memberId, hash(token));
+        lifecycle.touch(id);
+        return new LeagueAccessResponse(room, memberId, token);
+    }
+
+    private void requireLocalOwner(String id, String header) {
+        var member = authenticate(id, header);
+        if (!room(id).localMultiplayer() || !repository.owner(member)) fail(
+            HttpStatus.FORBIDDEN,
+            "Somente o criador pode gerenciar os treinadores locais."
+        );
+    }
+
+    private LeagueAccessResponse joinRoom(LeagueRoomResponse room, JoinLeagueRequest input) {
         if (!room.status().equals("LOBBY")) fail(HttpStatus.CONFLICT, "Esta liga não está aceitando participantes.");
         if (room.members().size() >= room.capacity()) fail(
             HttpStatus.CONFLICT,
@@ -137,6 +198,7 @@ public class SaveService {
         random.nextBytes(bytes);
         var token = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
         repository.addMember(id, saveId, name.strip(), teamId, owner, hash(token));
+        repository.includeBrazilianCalendar(saveId, teamId);
         seasons.initialize(saveId);
         lifecycle.touch(saveId);
         events.publishEvent(new SaveChangedEvent(saveId));
@@ -175,7 +237,14 @@ public class SaveService {
     public LeagueRoomResponse ready(String id, String token, boolean ready) {
         lock(id);
         var member = authenticate(id, token);
-        if (ready) profiles.requireAvailableStarters(id, member);
+        if (ready) {
+            finances.requireApprovedForMember(id, member);
+            profiles.requireAvailableStarters(id, member);
+        }
+        if (room(id).status().equals("LIVE")) fail(
+            HttpStatus.CONFLICT,
+            "A jornada está em andamento. Aguarde o término das partidas."
+        );
         repository.setReady(member, ready);
         var room = room(id);
         boolean allReady =
@@ -218,7 +287,8 @@ public class SaveService {
             league.roundNumber(),
             repository.members(id),
             league.lastActivityAt(),
-            lifecycle.expiresAt(league.lastActivityAt())
+            lifecycle.expiresAt(league.lastActivityAt()),
+            league.localMultiplayer()
         );
     }
 

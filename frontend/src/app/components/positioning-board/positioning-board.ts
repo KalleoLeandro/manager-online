@@ -1,0 +1,24 @@
+import {roles} from '../../utils/formations';
+import {playingAbility,roleAt} from '../../utils/player-positions';
+import { Component, HostListener, ElementRef, computed, input, output, signal, viewChild } from '@angular/core';
+import { defaultPitchPositions, PitchPlayer, PitchPosition, TacticalPlan } from '../../utils/tactical-plan';
+
+@Component({selector:'app-positioning-board',templateUrl:'./positioning-board.html',styleUrl:'./positioning-board.css'})
+export class PositioningBoard {
+ readonly playingAbility=playingAbility;
+ role(player:PitchPlayer):string{const index=player.slot!=null&&player.slot>=0?player.slot:this.players().indexOf(player);const baseRole=roles(this.formation())[index]||player.assignedPosition||player.position,base=defaultPitchPositions(this.players(),this.formation())[player.id],point=this.positions()[player.id];return point&&base&&Math.hypot(point.x-base.x,point.y-base.y)>8?roleAt(baseRole,point):baseRole;}
+ readonly players=input.required<PitchPlayer[]>();readonly formation=input.required<string>();readonly plan=input.required<TacticalPlan>();readonly locked=input(false);readonly planChange=output<TacticalPlan>();readonly selected=output<number>();
+ private readonly field=viewChild.required<ElementRef<HTMLDivElement>>('field');readonly active=signal(0);readonly drag=signal<{id:number;pointer:number;position:PitchPosition}|null>(null);
+ readonly custom=computed(()=>{const defaults=defaultPitchPositions(this.players(),this.formation());return this.players().some(p=>{const a=this.plan().positions[p.id],b=defaults[p.id];return a&&b&&(Math.abs(a.x-b.x)+Math.abs(a.y-b.y)>.05);});});
+ readonly positions=computed(()=>{const defaults=defaultPitchPositions(this.players(),this.formation());for(const p of this.players())if(this.plan().positions[p.id])defaults[p.id]=this.plan().positions[p.id];const drag=this.drag();if(drag)defaults[drag.id]=drag.position;return defaults;});
+ start(event:PointerEvent,player:PitchPlayer):void{this.active.set(player.id);this.selected.emit(player.id);if(this.locked())return;event.preventDefault();const target=event.currentTarget as HTMLElement;target.focus();this.drag.set({id:player.id,pointer:event.pointerId,position:this.positions()[player.id]});}
+ move(event:PointerEvent,player:PitchPlayer):void{if(this.locked()||this.drag()?.pointer!==event.pointerId||this.drag()?.id!==player.id)return;const rect=this.field().nativeElement.getBoundingClientRect();this.drag.set({id:player.id,pointer:event.pointerId,position:this.clamp(player,{x:100*(event.clientX-rect.left)/rect.width,y:100*(event.clientY-rect.top)/rect.height})});}
+ end(event:PointerEvent):void{const drag=this.drag();if(!drag||drag.pointer!==event.pointerId)return;const before=this.plan().positions[drag.id]||defaultPitchPositions(this.players(),this.formation())[drag.id];if(!this.locked()&&(Math.abs(before.x-drag.position.x)+Math.abs(before.y-drag.position.y)>.05))this.emit(drag.id,drag.position);this.drag.set(null);}
+ @HostListener('document:pointermove',['$event']) pointerMove(event:PointerEvent):void{const drag=this.drag();if(!drag)return;const player=this.players().find(p=>p.id===drag.id);if(player)this.move(event,player);else this.cancel();}
+ @HostListener('document:pointerup',['$event']) pointerUp(event:PointerEvent):void{this.end(event);}
+ @HostListener('document:pointercancel') @HostListener('window:blur') cancel():void{this.drag.set(null);}
+ key(event:KeyboardEvent,player:PitchPlayer):void{if(this.locked()||!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.key))return;event.preventDefault();const p=this.positions()[player.id],step=event.shiftKey?5:2;this.emit(player.id,this.clamp(player,{x:p.x+(event.key==='ArrowLeft'?-step:event.key==='ArrowRight'?step:0),y:p.y+(event.key==='ArrowUp'?-step:event.key==='ArrowDown'?step:0)}));}
+ reset():void{if(this.locked())return;this.planChange.emit({...this.plan(),positions:{}});}
+ private emit(id:number,position:PitchPosition):void{const positions:Record<number,PitchPosition>={};for(const p of this.players())positions[p.id]=this.positions()[p.id];positions[id]=position;this.planChange.emit({...this.plan(),positions});}
+ private clamp(player:PitchPlayer,p:PitchPosition):PitchPosition{const keeper=this.role(player)==='GOL';return {x:Math.round(Math.max(keeper?35:5,Math.min(keeper?65:95,p.x))*10)/10,y:Math.round(Math.max(keeper?82:8,Math.min(keeper?96:90,p.y))*10)/10};}
+}

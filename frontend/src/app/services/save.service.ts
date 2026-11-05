@@ -5,17 +5,21 @@ import { readLocal, writeLocal } from '../utils/local-storage';
 import { AuthService } from './auth.service';
 
 export interface Member { id: string; name: string; teamId: number; teamName: string; crestUrl: string | null; owner: boolean; ready: boolean }
-export interface Room { id: string; name: string; inviteCode: string; capacity: number; status: string; catalogVersion: string; roundNumber: number; members: Member[]; lastActivityAt: string; inactivityExpiresAt: string }
+export interface Room { localMultiplayer:boolean; id: string; name: string; inviteCode: string; capacity: number; status: string; catalogVersion: string; roundNumber: number; members: Member[]; lastActivityAt: string; inactivityExpiresAt: string }
 export interface Access { room: Room; memberId: string; accessToken: string }
-export interface CreateSave { name: string; capacity: number; managerName: string; teamId: number }
+export interface CreateSave { localMultiplayer?:boolean; name: string; capacity: number; managerName: string; teamId: number }
 
 @Injectable({ providedIn: 'root' })
 export class SaveService {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthService);
   private key(name: string) { return `${this.auth.session()?.id || 'guest'}:${name}`; }
-  remember(access: Access): void { writeLocal(this.key(`manager-save-${access.room.id}`), access); writeLocal(this.key('manager-last-save'), access.room.id); }
+  remember(access: Access): void { if(access.room.localMultiplayer&&access.room.members.some(m=>m.id===access.memberId&&m.owner))writeLocal(this.key(`manager-local-owner-${access.room.id}`),access); writeLocal(this.key(`manager-save-${access.room.id}`), access); writeLocal(this.key('manager-last-save'), access.room.id); }
   access(id: string): Access | null { return readLocal<Access>(this.key(`manager-save-${id}`)) || (!this.auth.session() ? readLocal<Access>(`manager-save-${id}`) : null); }
+  localOwner(id:string):Access|null {const saved=readLocal<Access>(this.key('manager-local-owner-'+id)),active=this.access(id);return saved||(active?.room.localMultiplayer&&active.room.members.some(m=>m.id===active.memberId&&m.owner)?active:null);}
+  private localHeaders(id:string){return {Authorization:'Bearer '+(this.localOwner(id)?.accessToken||'')};}
+  addLocal(id:string,managerName:string,teamId:number){return this.http.post<Access>(`/api/saves/${id}/local/players`,{managerName,teamId},{headers:this.localHeaders(id)});}
+  activateLocal(id:string,memberId:string){const owner=this.localOwner(id);if(owner)writeLocal(this.key('manager-local-owner-'+id),owner);return this.http.post<Access>(`/api/saves/${id}/local/players/${memberId}/activate`,{},{headers:this.localHeaders(id)}).pipe(tap(access=>this.remember(access)));}
   lastSave(): string | null { return readLocal<string>(this.key('manager-last-save')) || (!this.auth.session() ? readLocal<string>('manager-last-save') : null); }
   private accountHeaders(): Record<string,string> { const token=this.auth.session()?.accessToken; return token ? { Authorization: `Bearer ${token}` } : {}; }
   mine() { return this.http.get<Access[]>('/api/saves/mine', { headers: this.accountHeaders() }); }
@@ -37,7 +41,7 @@ export class SaveService {
   }
   private storeAccess(access:Access) { writeLocal(this.key(`manager-save-${access.room.id}`),access); }
   forget(id:string):void {
-    const keys=[this.key(`manager-save-${id}`)];
+    const keys=[this.key(`manager-save-${id}`),this.key(`manager-local-owner-${id}`)];
     if(this.lastSave()===id)keys.push(this.key('manager-last-save'));
     if(!this.auth.session()) {keys.push(`manager-save-${id}`);if(readLocal<string>('manager-last-save')===id)keys.push('manager-last-save');}
     try{for(const key of keys)localStorage.removeItem(key);}catch{}

@@ -2,6 +2,7 @@ package br.com.manager.service;
 
 import br.com.manager.models.dto.*;
 import br.com.manager.repository.*;
+import br.com.manager.utils.PlayerNameGenerator;
 import br.com.manager.utils.YouthGeneration;
 import java.util.*;
 import org.springframework.stereotype.Service;
@@ -39,46 +40,9 @@ public class JuniorPlayersService {
         double average = main.stream().mapToInt(ManagedPlayerDto::ability).average().orElse(60);
         var random = new Random();
         var talents = YouthGeneration.talents(random);
-        var first = List.of(
-            "Lucas",
-            "Alex",
-            "Daniel",
-            "Gabriel",
-            "Nicolas",
-            "Samuel",
-            "Rafael",
-            "Victor",
-            "Thomas",
-            "Oliver",
-            "Leo",
-            "Felipe",
-            "David",
-            "Adrian",
-            "Matias",
-            "João",
-            "Arthur",
-            "Bruno"
-        );
-        var last = List.of(
-            "Silva",
-            "Costa",
-            "Almeida",
-            "Santos",
-            "Lima",
-            "Ferreira",
-            "Souza",
-            "Ribeiro",
-            "Martins",
-            "Mendes",
-            "Oliveira",
-            "Pereira",
-            "Rocha",
-            "Dias",
-            "Carvalho",
-            "Barbosa",
-            "Moura",
-            "Azevedo"
-        );
+        var usedNames = new HashSet<String>();
+        main.forEach(player -> usedNames.add(player.name()));
+        String country = juniors.country(id, member.teamId());
         var roles = List.of(
             "GOL",
             "GOL",
@@ -99,8 +63,6 @@ public class JuniorPlayersService {
             "ATA",
             "ATA"
         );
-        var names = new ArrayList<>(first);
-        Collections.shuffle(names, random);
         var generated = new ArrayList<JuniorPlayerSeedDto>();
         for (int i = 0; i < roles.size(); i++) {
             int age = 15 + random.nextInt(4);
@@ -109,7 +71,7 @@ public class JuniorPlayersService {
             generated.add(
                 new JuniorPlayerSeedDto(
                     i + 1,
-                    names.get(i) + " " + last.get(random.nextInt(last.size())),
+                    PlayerNameGenerator.next(country, random, usedNames),
                     position,
                     profile.ability(),
                     age,

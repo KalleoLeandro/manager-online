@@ -17,11 +17,13 @@
         @if (!joined()) {
           <label for="save-name">Nome da liga</label><input id="save-name" name="saveName" [(ngModel)]="saveName" minlength="2" maxlength="60" required>
           <label>Modo de jogo</label><div class="play-mode" role="group" aria-label="Modo de jogo">
-            <button type="button" [class.active]="capacity === 1" [attr.aria-pressed]="capacity === 1" (click)="capacity = 1">Jogar sozinho</button>
-            <button type="button" [class.active]="capacity > 1" [attr.aria-pressed]="capacity > 1" (click)="capacity = 4">Com amigos</button>
+            <button type="button" [class.active]="capacity === 1" [attr.aria-pressed]="capacity === 1" (click)="capacity = 1; localMultiplayer = false">Jogar sozinho</button>
+            <button type="button" [class.active]="capacity > 1 && !localMultiplayer" [attr.aria-pressed]="capacity > 1 && !localMultiplayer" (click)="capacity = 4; localMultiplayer = false">Online com amigos</button>
+            <button type="button" [class.active]="capacity > 1 && localMultiplayer" [attr.aria-pressed]="capacity > 1 && localMultiplayer" (click)="capacity = 4; localMultiplayer = true">Multiplayer local (mesmo aparelho)</button>
           </div>
-          <label for="capacity">Quantidade de participantes</label><select id="capacity" name="capacity" [(ngModel)]="capacity">@for (n of countOptions; track n) { <option [ngValue]="n">{{ n }} {{ n === 1 ? 'treinador (solo)' : 'treinadores' }}</option> }</select>
-          <small>{{ capacity === 1 ? 'Só você confirma quando estiver pronto. Não precisa de convite.' : 'Inclui você. Convide seus amigos depois de escolher o clube.' }}</small>
+          @if(capacity>1&&localMultiplayer){<p class="local-mode-note">Até 8 treinadores no mesmo aparelho. Cadastre os amigos no saguão e alterne o treinador ativo para preparar cada time e tomar decisões nas partidas.</p>}
+          <label for="capacity">Quantidade de participantes</label><select id="capacity" name="capacity" [(ngModel)]="capacity">@for (n of (localMultiplayer?countOptions.slice(0,8):countOptions); track n) { <option [ngValue]="n">{{ n }} {{ n === 1 ? 'treinador (solo)' : 'treinadores' }}</option> }</select>
+          <small>{{ capacity === 1 ? 'Só você confirma quando estiver pronto. Não precisa de convite.' : 'Inclui você. Cadastre os amigos no saguão no modo local ou convide pelo código no modo online.' }}</small>
         }
         <div class="selected-club">@if (team(); as club) { <img appClubCrest [clubId]="club.id" alt=""><div><small>SEU CLUBE</small><strong>{{ club.name }}</strong><span>Força {{ club.rating }} / 99</span></div> } @else { <p>← Selecione um clube para ver o plantel.</p> }</div>
         @if (realtime.error()) { <p class="error" role="alert">{{ realtime.error() }}</p> }@if (error()) { <p class="error" role="alert">{{ error() }}</p> }

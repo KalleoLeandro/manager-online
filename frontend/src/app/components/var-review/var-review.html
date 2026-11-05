@@ -1,0 +1,31 @@
+<dialog #dialog aria-labelledby="var-title" aria-describedby="var-description" (cancel)="$event.preventDefault()"><article [class.confirmed]="review().phase==='DECISION'&&review().confirmed" [class.disallowed]="review().phase==='DECISION'&&!review().confirmed">
+ <header><span class="var-badge">VAR</span><span>ARBITRAGEM DE VÍDEO</span></header>
+ @if(review().phase==='REVIEW'){
+  <h2 id="var-title">Lance em revisão</h2><p id="var-description">O árbitro está analisando o gol.</p>
+  <svg class="referee" viewBox="0 0 240 225" role="img" aria-label="Árbitro fazendo o sinal retangular do VAR">
+   <rect class="review-frame" x="66" y="57" width="108" height="65" rx="3" fill="none" stroke="#b8dfef" stroke-width="2"/>
+   <ellipse cx="120" cy="215" rx="48" ry="5" fill="#0003"/>
+   <path d="m107 162-6 42m32-42 6 42" stroke="#dab092" stroke-width="11" stroke-linecap="round"/>
+   <path d="m102 187-2 21m38-21 3 21" stroke="#e9edf1" stroke-width="12"/><path d="m100 211-11 3m52-3 11 3" stroke="#101b25" stroke-width="10" stroke-linecap="round"/>
+   <path d="M98 126h44l-3 39h-16l-3-24-3 24h-16Z" fill="#142631"/>
+   <!-- Arms originate at the shoulders, behind the torso. Sleeves follow the same joints. -->
+   <g class="animated-arms" fill="none" stroke-linejoin="round">
+    <path class="left-arm" d="M101 77 79.74 98.14 77 128" stroke="#dab092" stroke-width="11" stroke-linecap="round"><animate attributeName="d" dur="2.8s" repeatCount="indefinite" values="M101 77 79.74 98.14 77 128;M101 77 82.2 53.63 112 57;M101 77 72.48 86.3 66 57;M101 77 76.1 93.74 66 122;M101 77 89.48 104.7 114 122;M101 77 79.74 98.14 77 128"/></path>
+    <path class="right-arm" d="M139 77 160.26 98.14 163 128" stroke="#dab092" stroke-width="11" stroke-linecap="round"><animate attributeName="d" dur="2.8s" repeatCount="indefinite" values="M139 77 160.26 98.14 163 128;M139 77 157.8 53.63 128 57;M139 77 167.52 86.3 174 57;M139 77 163.9 93.74 174 122;M139 77 150.52 104.7 126 122;M139 77 160.26 98.14 163 128"/></path>
+    <path class="left-sleeve" d="M101 77 92.5 85.46" stroke="#efd358" stroke-width="18"><animate attributeName="d" dur="2.8s" repeatCount="indefinite" values="M101 77 92.5 85.46;M101 77 93.48 67.65;M101 77 89.59 80.72;M101 77 91.04 83.7;M101 77 96.39 88.08;M101 77 92.5 85.46"/></path>
+    <path class="right-sleeve" d="M139 77 147.5 85.46" stroke="#efd358" stroke-width="18"><animate attributeName="d" dur="2.8s" repeatCount="indefinite" values="M139 77 147.5 85.46;M139 77 146.52 67.65;M139 77 150.41 80.72;M139 77 148.96 83.7;M139 77 143.61 88.08;M139 77 147.5 85.46"/></path>
+   </g>
+   <g class="static-arms" fill="none" stroke-linejoin="round"><path d="M101 77 72.48 86.3 66 57M139 77 167.52 86.3 174 57" stroke="#dab092" stroke-width="11" stroke-linecap="round"/><path d="M101 77 89.59 80.72M139 77 150.41 80.72" stroke="#efd358" stroke-width="18"/></g>
+   <path d="M103 70 111 64h18l8 6 2 58h-38Z" fill="#efd358" stroke="#f9e793" stroke-width="1.5"/>
+   <path d="m111 66 9 9 9-9M134 93h-10v11h10" fill="none" stroke="#5d541f" stroke-width="2"/>
+   <path d="M120 76v37" stroke="#5d541f" stroke-width="1"/>
+   <rect x="114" y="52" width="12" height="15" rx="4" fill="#c89578"/>
+   <ellipse cx="120" cy="41" rx="17" ry="20" fill="#e3b496"/>
+   <path d="M103 36c-1-25 36-24 34 1-7-2-12-9-16-10-4 5-11 9-18 9" fill="#302d28"/>
+   <path d="M137 35v13l-9 4" fill="none" stroke="#172833" stroke-width="3"/><path d="M112 41h1m14 0h1m-13 11h9" stroke="#795541" stroke-width="2" stroke-linecap="round"/>
+  </svg><div class="review-loading" aria-hidden="true"><i></i><i></i><i></i></div>
+ }@else{
+  <h2 id="var-title">Decisão</h2><div class="verdict-symbol" aria-hidden="true">{{review().confirmed?'✓':'×'}}</div><strong class="verdict">{{review().confirmed?'GOL CONFIRMADO':'GOL ANULADO'}}</strong><p id="var-description" class="decision-reason">{{review().reason}}</p>
+ }
+ <footer>{{review().phase==='REVIEW'?'Aguardando a decisão do árbitro':review().confirmed?'A seguir: comemoração do marcador':'O placar foi corrigido. A partida continuará.'}}</footer>
+</article></dialog>

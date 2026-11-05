@@ -1,0 +1,8 @@
+<button class="options-trigger" type="button" aria-haspopup="dialog" (click)="open()"><app-game-icon name="options"/><span>Opções da partida</span></button>
+<dialog #dialog aria-labelledby="match-options-title" (click)="backdrop($event)">
+ <header><div><small>PERSONALIZAR</small><h2 id="match-options-title">Opções da partida</h2></div><button class="close" type="button" aria-label="Fechar opções" (click)="close()">×</button></header>
+ <section><h3>Som e volume</h3><app-match-audio-controls/></section>
+ <section><h3>Velocidade de jogo</h3><app-match-speed-controls [percent]="percent()" [allowed]="allowed()" [local]="local()" [busy]="busy()" (changed)="speedChanged.emit($event)"/></section>
+ <section><h3>Painéis visíveis</h3><p>Escolha o que acompanhar. Os painéis também podem ser recolhidos na própria tela.</p><div class="panel-choices">@for(panel of layout().choices;track panel.id){<button type="button" [attr.aria-pressed]="layout().visible(panel.id)" [class.active]="layout().visible(panel.id)" (click)="panelToggled.emit(panel.id)"><app-game-icon [name]="panel.icon"/><span>{{panel.label}}</span><b>{{layout().visible(panel.id)?'✓':'+'}}</b></button>}</div></section>
+ <footer><button type="button" (click)="layout().reset()">Restaurar painéis</button><button class="done" type="button" (click)="close()">Concluir</button></footer>
+</dialog>

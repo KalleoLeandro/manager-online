@@ -32,4 +32,13 @@ public class LocalImageService {
             "Imagem não encontrada."
         );
     }
+
+    public LocalImageDto trophy(String id) throws IOException {
+        validate(id);
+        return repository.trophy(id);
+    }
+
+    public org.springframework.core.io.Resource trophyCredits() {
+        return repository.trophyCredits();
+    }
 }

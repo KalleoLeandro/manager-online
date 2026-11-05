@@ -1,0 +1,2 @@
+:host{display:block}h2{font-size:1.1rem;margin:0 0 20px}.stat-row{display:grid;grid-template-columns:58px minmax(0,1fr) 58px;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid #e4eae7;text-align:center}.stat-row span{font-size:.8rem;color:#607069}.stat-row strong{font:600 .9rem ui-monospace,SFMono-Regular,Consolas,monospace;color:#204c3b}
+h2{font-family:Arial,sans-serif;text-transform:none;letter-spacing:0;line-height:1.3}

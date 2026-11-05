@@ -14,6 +14,14 @@ public class LeagueCalendarController {
         this.service = service;
     }
 
+    @GetMapping("/season")
+    public br.com.manager.models.responses.SeasonCalendarResponse season(
+        @PathVariable String id,
+        @RequestHeader(value = "Authorization", required = false) String token
+    ) {
+        return service.season(id, token);
+    }
+
     @GetMapping
     public LeagueCalendarResponse week(
         @PathVariable String id,

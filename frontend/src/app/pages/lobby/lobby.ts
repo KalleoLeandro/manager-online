@@ -1,4 +1,5 @@
-import { Component, DestroyRef, computed, inject, OnInit, signal } from '@angular/core';
+import { LocalPlayers } from '../../components/local-players/local-players';
+import { Component, DestroyRef, computed, effect, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize } from 'rxjs';
 import { SaveService } from '../../services/save.service';
@@ -10,8 +11,9 @@ import { SavePresence } from '../../components/save-presence/save-presence';
 import { LeagueRetentionNotice } from '../../components/league-retention-notice/league-retention-notice';
 import { currentPath } from '../../utils/navigation';
 
-@Component({ selector: 'app-lobby', providers: [SaveRealtimeService], imports: [ClubCrest, LiveStatus, SavePresence,LeagueRetentionNotice], templateUrl: './lobby.html', styleUrl: './lobby.css' })
+@Component({ selector: 'app-lobby', providers: [SaveRealtimeService], imports:[LocalPlayers,ClubCrest, LiveStatus, SavePresence,LeagueRetentionNotice], templateUrl: './lobby.html', styleUrl: './lobby.css' })
 export class Lobby implements OnInit {
+  constructor(){effect(()=>{if(this.realtime.room()?.status==='LIVE')location.hash=`match/${this.id}`;});}
   private readonly api = inject(SaveService);
   private readonly destroy = inject(DestroyRef);
   readonly id = currentPath().split('/')[1] || '';

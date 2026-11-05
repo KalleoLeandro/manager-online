@@ -1,5 +1,5 @@
 export interface PlayerTechnical { attributes: Record<string,number>; potential: number; sourcedAttributes: string[]; sourceName: string|null; sourceUrl: string|null }
-export interface PlayerCondition { fitness: number; effectiveAbility: number; available: boolean; status: 'AVAILABLE'|'TIRED'|'UNFIT'|'INJURED'; injuryName: string|null; returnRound: number|null; morale: number; sharpness: number; performanceFactor: number }
+export interface PlayerCondition { fitness: number; effectiveAbility: number; available: boolean; status: 'AVAILABLE'|'TIRED'|'UNFIT'|'INJURED'|'SUSPENDED'; injuryName: string|null; returnRound: number|null; morale: number; sharpness: number; performanceFactor: number }
 export const attributeDefinitions = [
   {
     "key": "shot_power",

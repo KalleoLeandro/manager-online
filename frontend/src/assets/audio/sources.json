@@ -1,0 +1,58 @@
+[
+  {
+    "file": "crowd.wav",
+    "title": "noise#01.aif",
+    "author": "huubjeroen",
+    "source": "https://freesound.org/people/huubjeroen/sounds/39733/",
+    "download": "https://cdn.freesound.org/previews/39/39733_190760-hq.mp3",
+    "license": "CC0-1.0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "sourceSha256": "476935dd27a03ed88f13ec1df224d26e3814ce21011207eaf6239ea391c365ee",
+    "sha256": "d924f2913c79af367b2a943d68eb6dcf3341dc9001791a582ee3c3a6052674e4",
+    "changes": "Most energetic window selected; Excerpt from 219.75s; 30s loop with 1s crossfade; filtering, loudness normalization, stereo PCM16 24kHz"
+  },
+  {
+    "file": "goal.wav",
+    "title": "Goal shout and crowd celebration",
+    "author": "deleted_user_2104797 + polmdx",
+    "source": "https://freesound.org/people/deleted_user_2104797/sounds/346685/",
+    "download": "https://cdn.freesound.org/previews/346/346685_2104797-hq.mp3",
+    "license": "CC-BY-4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+    "voice": {
+      "id": 219873,
+      "title": "goal shout.mp3",
+      "author": "polmdx",
+      "source": "https://freesound.org/people/polmdx/sounds/219873/",
+      "download": "https://cdn.freesound.org/previews/219/219873_4071086-hq.mp3",
+      "license": "CC-BY-4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "sourceSha256": "b34f134484073f3f2350c8b75a243554a65b1a095c99b32adf04281b56092f58"
+    },
+    "sourceSha256": "435f986be1373249bc40f72256af11e389e3f8286289538904594818943127c6",
+    "sha256": "8bf544fc96db8b631ab4f8e0ba30d44874a8e3eaa43f121a3047692be15a4150",
+    "changes": "Most energetic window selected; Excerpt from 3.75s; 4.8s with fades; filtering, loudness normalization, voice trimmed, padded and mixed with cheering crowd, +2.9dB lift with 0.88 peak limiter, stereo PCM16 24kHz"
+  },
+  {
+    "file": "boo.wav",
+    "title": "Booing Crowd",
+    "author": "NeoSpica",
+    "source": "https://freesound.org/people/NeoSpica/sounds/504621/",
+    "download": "https://cdn.freesound.org/previews/504/504621_7704891-hq.mp3",
+    "license": "CC0-1.0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "sourceSha256": "f50512b9c3ab549220bf3fcf68033a617befbd2e86296ab08c473bc91606a2e7",
+    "sha256": "d72726538c12ad0988ac6e6ca1453e4d3d07bddaa2fecff5af7e6a290f583f41",
+    "changes": "Excerpt from 1s; 3.2s with fades; filtering, loudness normalization, stereo PCM16 24kHz"
+  },
+  {
+    "file": "goal.mp3",
+    "title": "GOL TORCIDA",
+    "author": "albano (Myinstants uploader)",
+    "source": "https://www.myinstants.com/pt/instant/gol-torcida-81221/",
+    "download": "https://www.myinstants.com/media/sounds/gol-torcida.mp3",
+    "license": "Not specified by source",
+    "sha256": "91a4dfa086e5a3772ccf0f9cd58796581f42141eccff501a1464353c2b551b8f",
+    "changes": "Original MP3 supplied by user; no processing"
+  }
+]

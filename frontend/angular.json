@@ -1,7 +1,9 @@
 {
   "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
   "version": 1,
-  "cli": { "analytics": false },
+  "cli": {
+    "analytics": false
+  },
   "projects": {
     "manager-online": {
       "projectType": "application",
@@ -14,21 +16,61 @@
             "outputPath": "dist/manager-online",
             "index": "src/index.html",
             "browser": "src/main.ts",
-            "assets": [{ "glob": "*-OFL.txt", "input": "src/assets/fonts", "output": "assets/fonts" }],
+            "assets": [
+              {
+                "glob": "*-OFL.txt",
+                "input": "src/assets/fonts",
+                "output": "assets/fonts"
+              },
+              {
+                "glob": "*.wav",
+                "input": "src/assets/audio",
+                "output": "assets/audio"
+              },
+              {
+                "glob": "CREDITS.txt",
+                "input": "src/assets/audio",
+                "output": "assets/audio"
+              },
+              {
+                "glob": "*.mp3",
+                "input": "src/assets/audio",
+                "output": "assets/audio"
+              }
+            ],
             "tsConfig": "tsconfig.app.json",
-            "styles": ["src/styles.css"]
+            "styles": [
+              "src/styles.css"
+            ]
           },
           "configurations": {
-            "production": { "outputHashing": "all", "optimization": { "scripts": true, "styles": { "minify": true, "inlineCritical": false }, "fonts": false } },
-            "development": { "optimization": false, "sourceMap": true }
+            "production": {
+              "outputHashing": "all",
+              "optimization": {
+                "scripts": true,
+                "styles": {
+                  "minify": true,
+                  "inlineCritical": false
+                },
+                "fonts": false
+              }
+            },
+            "development": {
+              "optimization": false,
+              "sourceMap": true
+            }
           },
           "defaultConfiguration": "production"
         },
         "serve": {
           "builder": "@angular/build:dev-server",
           "configurations": {
-            "production": { "buildTarget": "manager-online:build:production" },
-            "development": { "buildTarget": "manager-online:build:development" }
+            "production": {
+              "buildTarget": "manager-online:build:production"
+            },
+            "development": {
+              "buildTarget": "manager-online:build:development"
+            }
           },
           "defaultConfiguration": "development"
         }

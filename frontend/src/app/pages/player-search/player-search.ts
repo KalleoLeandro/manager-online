@@ -1,4 +1,4 @@
-import { Component, DestroyRef, inject, input, signal } from '@angular/core';
+import { Component, DestroyRef, inject, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ManagementService, ManagedPlayer } from '../../services/management.service';
@@ -8,7 +8,7 @@ import { PlayerPortrait } from '../../components/player-portrait/player-portrait
 interface Result {player:ManagedPlayer;teamId:number;teamName:string}
 @Component({selector:'app-player-search',imports:[FormsModule,PlayerDetails,PlayerPortrait],templateUrl:'./player-search.html',styleUrl:'./player-search.css'})
 export class PlayerSearchPage {
-  readonly leagueId=input.required<string>();
+  readonly leagueId=input.required<string>();readonly negotiate=output<number>();
   private readonly api=inject(ManagementService);
   private readonly destroy=inject(DestroyRef);
   readonly query=signal('');readonly results=signal<Result[]>([]);readonly selected=signal<Result|null>(null);

@@ -1,0 +1,23 @@
+MATCH AUDIO CREDITS
+
+Goal shout: "goal shout.mp3" by polmdx
+https://freesound.org/people/polmdx/sounds/219873/
+Creative Commons Attribution 4.0: https://creativecommons.org/licenses/by/4.0/
+Changes: silence trimming, filtering, normalization and mixing with cheering crowd.
+
+Goal crowd: "Crowd Cheer.wav" by deleted_user_2104797
+https://freesound.org/people/deleted_user_2104797/sounds/346685/
+CC0 1.0, excerpt and normalization.
+
+Stadium ambience: "noise#01.aif" by huubjeroen
+https://freesound.org/people/huubjeroen/sounds/39733/
+CC0 1.0, energetic excerpt, filtering, normalization and loop crossfade.
+
+Booing: "Booing Crowd" by NeoSpica
+https://freesound.org/people/NeoSpica/sounds/504621/
+CC0 1.0, excerpt, filtering, normalization and fades.
+
+CC0 license: https://creativecommons.org/publicdomain/zero/1.0/
+No endorsement by the original authors is implied.
+
+GOL TORCIDA: albano / Myinstants. Fonte indicada pelo usuario: https://www.myinstants.com/pt/instant/gol-torcida-81221/ (goal.mp3). Licenca nao especificada na pagina.

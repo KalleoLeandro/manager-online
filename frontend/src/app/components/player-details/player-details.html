@@ -3,7 +3,7 @@
   <div class="profile-content">
     <section class="identity">
       <div class="portrait-frame"><app-player-portrait [playerId]="player().id" /></div>
-      <div class="identity-text"><p class="club-name">{{teamName() || 'Elenco do clube'}}</p><h2 id="player-detail-name">{{player().name}}</h2><p>{{positionName()}} <span>·</span> {{player().level}}</p><div class="badges"><span>{{player().generated?'Jogador fictício':'Jogador real'}}</span>@if(starting()!==null){<span>{{starting()?'Time titular':'Reserva'}}</span>}</div></div>
+      <div class="identity-text"><p class="club-name">{{teamName() || 'Elenco do clube'}}</p><h2 id="player-detail-name">{{player().name}}</h2><p>{{positionName()}} <span>·</span> {{player().level}}</p><p>Posições: {{player().positions?.join(" / ")||player().position}} @if(player().positionsEstimated){<small>(estimadas pelos atributos)</small>}</p><div class="badges"><span>{{player().generated?'Jogador fictício':'Jogador real'}}</span>@if(starting()!==null){<span>{{starting()?'Time titular':'Reserva'}}</span>}</div></div>
       <div class="overall"><strong>{{player().ability}}</strong><span>HABILIDADE BASE / 99</span></div>
     </section>
     <dl class="facts">
@@ -12,7 +12,7 @@
       <div><dt>Camisa</dt><dd>{{player().number || 'Não informada'}}</dd></div>
       <div><dt>Condição física</dt><dd>{{player().fitness!=null?player().fitness+'%':'Não disponível na prévia'}}</dd></div>
     </dl>
-    <app-player-technical [technical]="player().technical || null" [condition]="player().condition || null" [position]="player().position"/>
+    @if(assignedPosition()){<p>Escalado como <strong>{{assignedPosition()}}</strong> · Aproveitamento na posição: {{positionPercent()}}%. Os valores em campo incluem a adaptação.</p>}<app-player-technical [positionFactor]="positionFactor()" [technical]="player().technical || null" [condition]="player().condition || null" [position]="assignedPosition()||player().position"/>
     <section class="profile-section"><h3>Especialidades</h3><p>Os dois atributos de destaque do atleta.</p><div class="specialties">
       <div><label for="player-attribute-one">{{player().attribute1}} <strong><app-attribute-score [value]="player().value1"/> <small>/ 99</small></strong></label><meter id="player-attribute-one" min="1" max="99" [value]="player().value1">{{player().value1}}</meter></div>
       <div><label for="player-attribute-two">{{player().attribute2}} <strong><app-attribute-score [value]="player().value2"/> <small>/ 99</small></strong></label><meter id="player-attribute-two" min="1" max="99" [value]="player().value2">{{player().value2}}</meter></div>

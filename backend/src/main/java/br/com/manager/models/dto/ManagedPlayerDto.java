@@ -19,4 +19,11 @@ public record ManagedPlayerDto(
     String nationality,
     PlayerTechnicalDto technical,
     PlayerConditionDto condition
-) {}
+) {
+    @com.fasterxml.jackson.annotation.JsonProperty("positions")
+    public java.util.List<String> positions() {
+        return br.com.manager.utils.PlayerPositionRules.preferred(position,technical==null?java.util.Map.of():technical.attributes());
+    }
+    @com.fasterxml.jackson.annotation.JsonProperty("positionsEstimated")
+    public boolean positionsEstimated() { return !position.equals("GOL"); }
+}

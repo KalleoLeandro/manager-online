@@ -1,0 +1,25 @@
+/* Shared controls for the club interface; deliberately scoped away from registration. */
+.club-app :is(button,a){-webkit-tap-highlight-color:transparent}
+.club-app :is(.room-link,.back-link,.management-top a,app-management-section .option-links a){
+ display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:10px 15px;
+ color:var(--text);background:linear-gradient(180deg,var(--surface),color-mix(in srgb,var(--surface) 80%,var(--page)));
+ border:1px solid var(--border);border-bottom:3px solid color-mix(in srgb,var(--border) 85%,var(--text));
+ border-radius:7px;box-shadow:0 2px 3px #00000006;text-decoration:none;font-size:11px;font-weight:600;line-height:1.4;
+ transition:transform .15s,border-color .15s,box-shadow .15s;
+}
+.club-app :is(.room-link,.back-link,.management-top a,app-management-section .option-links a):hover{
+ border-color:var(--accent);color:var(--accent);transform:translateY(-1px);box-shadow:0 4px 8px #0000000a;
+}
+.club-app :is(.theme-toggle,.section-tabs button,.management-actions button,.auto-lineup,app-management-section button,app-team-messages .message-detail button){
+ min-height:42px;border-radius:7px;border-bottom-width:3px;box-shadow:0 2px 3px #00000008;font-weight:600;
+ transition:transform .15s,box-shadow .15s,background .15s;
+}
+.club-app :is(.theme-toggle,.section-tabs button,.management-actions button,.auto-lineup,app-management-section button,app-team-messages .message-detail button):hover:not(:disabled){
+ transform:translateY(-1px);box-shadow:0 4px 9px #00000012;
+}
+.club-app :is(.room-link,.back-link,.management-top a,.theme-toggle,.section-tabs button,.management-actions button,app-management-section button,app-team-messages .message-detail button):active:not(:disabled){transform:translateY(1px);box-shadow:none}
+.club-app :is(button,a):focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.club-app app-management-section .option-links{gap:12px}
+.club-app app-management-section .option-links button{margin-top:0}
+@media(max-width:700px){.club-app :is(.room-link,.management-top a){font-size:10px;padding:9px 11px}.club-app .management-actions button{min-height:48px}}
+@media(prefers-reduced-motion:reduce){.club-app :is(button,a){transition:none!important}}

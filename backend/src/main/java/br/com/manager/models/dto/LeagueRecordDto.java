@@ -10,5 +10,6 @@ public record LeagueRecordDto(
     String status,
     String catalogVersion,
     int roundNumber,
-    Instant lastActivityAt
+    Instant lastActivityAt,
+    boolean localMultiplayer
 ) {}

@@ -35,6 +35,25 @@ public class SaveController {
         return service.mine(header);
     }
 
+    @PostMapping("/{id}/local/players")
+    @ResponseStatus(HttpStatus.CREATED)
+    public LeagueAccessResponse addLocal(
+        @PathVariable String id,
+        @RequestHeader(value = "Authorization", required = false) String header,
+        @Valid @RequestBody JoinLeagueRequest input
+    ) {
+        return service.addLocal(id, header, input);
+    }
+
+    @PostMapping("/{id}/local/players/{memberId}/activate")
+    public LeagueAccessResponse switchLocal(
+        @PathVariable String id,
+        @PathVariable String memberId,
+        @RequestHeader(value = "Authorization", required = false) String header
+    ) {
+        return service.switchLocal(id, header, memberId);
+    }
+
     @GetMapping("/invites/{code}")
     public LeagueRoomResponse invite(@PathVariable String code) {
         return service.byCode(code);

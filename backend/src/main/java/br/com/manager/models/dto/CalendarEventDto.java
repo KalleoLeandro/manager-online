@@ -8,5 +8,12 @@ public record CalendarEventDto(
     String type,
     String title,
     String description,
-    String status
-) {}
+    String status,
+    Long opponentTeamId,
+    String opponentTeamName,
+    String venue
+) {
+    public CalendarEventDto(String id, LocalDate date, String type, String title, String description, String status) {
+        this(id,date,type,title,description,status,null,null,null);
+    }
+}

@@ -20,5 +20,6 @@ public record TeamManagementResponse(
     String mentality,
     List<Long> lineup,
     int version,
-    boolean introductionSeen
+    boolean introductionSeen,
+    br.com.manager.models.dto.TacticalPlanDto tacticalPlan
 ) {}

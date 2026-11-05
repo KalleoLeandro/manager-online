@@ -16,8 +16,8 @@
 
 # Downloaded and manually supplied player portraits stay local.
 /src/main/resources/res/players/*
-!/src/main/resources/res/players/README.md
 
 # Downloaded and manually supplied club crests stay local.
 /src/main/resources/res/crests/*
-!/src/main/resources/res/crests/README.md
+
+/src/main/resources/res/trophies/*

@@ -1,0 +1,5 @@
+<section class="match-panel" [class.required]="required()" [attr.aria-labelledby]="'panel-title-'+panelId()">
+ <header class="panel-heading"><button type="button" class="panel-disclosure" [disabled]="required()" [attr.aria-expanded]="expanded()" [attr.aria-controls]="'panel-body-'+panelId()" (click)="expandedChange.emit(!expanded())"><span class="panel-icon"><app-game-icon [name]="icon()"/></span><span class="panel-titles"><h2 [id]="'panel-title-'+panelId()">{{title()}}</h2>@if(subtitle()){<small>{{subtitle()}}</small>}</span><span class="panel-chevron" [class.expanded]="expanded()" aria-hidden="true">⌄</span></button><button class="panel-hide" type="button" [disabled]="required()" [attr.aria-label]="'Ocultar painel '+title()" title="Ocultar painel" (click)="hiddenPanel.emit()">×</button></header>
+ @if(required()){<div class="required-label" role="status">Sua decisão é necessária</div>}
+ <div class="panel-body" [id]="'panel-body-'+panelId()" [hidden]="!expanded()"><ng-content/></div>
+</section>

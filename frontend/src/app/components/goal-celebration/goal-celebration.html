@@ -1,0 +1,7 @@
+<dialog #dialog aria-labelledby="goal-heading" aria-describedby="goal-scorer goal-total" (cancel)="$event.preventDefault()">
+ <article class="goal-card"><header><span>{{clock(goal().minute,goal().period)}}</span><span><img appClubCrest [clubId]="goal().teamId" alt="">{{goal().teamName}}</span></header>
+ <h2 id="goal-heading">GOL!</h2><div class="scorer-portrait"><app-player-portrait [playerId]="goal().playerId"/></div>
+ <h3 id="goal-scorer">{{goal().playerName}}</h3><p id="goal-total" class="goal-total"><strong>{{goal().goals}}</strong> {{goal().goals===1?'gol nesta rodada':'gols nesta rodada'}}</p>
+ @if(goal().assistName){<p class="goal-assist">Assistência de <strong>{{goal().assistName}}</strong></p>}
+ <footer><span>A partida continua em instantes</span><div class="celebration-progress" aria-hidden="true"><i [style.animation-duration.ms]="duration()"></i></div></footer></article>
+</dialog>

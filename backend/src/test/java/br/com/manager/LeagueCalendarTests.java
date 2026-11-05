@@ -34,6 +34,90 @@ class LeagueCalendarTests {
     JdbcTemplate db;
 
     @Test
+    void seasonIncludesEveryFixtureAndMoreThanOneHundredEventsWithoutLeakingOtherTeams() {
+        var teams = catalog.teams(null);
+        var team = teams
+            .stream()
+            .filter(t -> t.leagueId().equals(1L))
+            .findFirst()
+            .orElseThrow();
+        var access = saves.create(new CreateLeagueRequest("Temporada completa", 1, "Treinador", team.id()));
+        var id = access.room().id();
+        var token = "Bearer " + access.accessToken();
+        var initial = calendar.season(id, token);
+        assertThat(initial.seasonLabel()).contains("/");
+        assertThat(initial.seasonEnd().getYear()).isGreaterThan(initial.currentDate().getYear());
+        assertThat(
+            initial
+                .events()
+                .stream()
+                .filter(e -> e.type().equals("MATCH"))
+                .count()
+        ).isEqualTo(
+            db.queryForObject(
+                "SELECT COUNT(*) FROM national_fixtures WHERE save_id=? AND (home_team_id=? OR away_team_id=?) AND match_date BETWEEN ? AND ?",
+                Long.class,
+                id,
+                team.id(),
+                team.id(),
+                initial.seasonStart(),
+                initial.seasonEnd()
+            )
+        );
+        assertThat(initial.events()).anyMatch(
+            e -> e.type().equals("MATCH") && e.date().isAfter(calendar.week(id, token).weekEnd())
+        );
+        var date = initial.seasonEnd().minusDays(1);
+        for (int i = 0; i < 125; i++) db.update(
+            "INSERT INTO league_calendar_events(save_id,team_id,event_date,event_type,title) VALUES(?,?,?,'CLUB',?)",
+            id,
+            team.id(),
+            date,
+            "Evento futuro " + i
+        );
+        db.update(
+            "INSERT INTO league_calendar_events(save_id,team_id,event_date,event_type,title) VALUES(?,?,?,'CLUB','Privado')",
+            id,
+            teams
+                .stream()
+                .filter(t -> !t.id().equals(team.id()))
+                .findFirst()
+                .orElseThrow()
+                .id(),
+            date
+        );
+        db.update(
+            "INSERT INTO league_calendar_events(save_id,event_date,event_type,title) VALUES(?,?,'CLUB','Fora da temporada')",
+            id,
+            initial.seasonEnd().plusDays(1)
+        );
+        var result = calendar.season(id, token);
+        assertThat(
+            result
+                .events()
+                .stream()
+                .filter(e -> e.title().startsWith("Evento futuro"))
+                .count()
+        ).isEqualTo(125);
+        assertThat(result.events()).noneMatch(
+            e -> e.title().equals("Privado") || e.title().equals("Fora da temporada")
+        );
+        assertThat(result.events()).isSortedAccordingTo(
+            java.util.Comparator.comparing(br.com.manager.models.dto.CalendarEventDto::date).thenComparing(
+                br.com.manager.models.dto.CalendarEventDto::id
+            )
+        );
+        assertThat(result.events()).allMatch(
+            e -> !e.date().isBefore(result.seasonStart()) && !e.date().isAfter(result.seasonEnd())
+        );
+        var foreign = saves.create(new CreateLeagueRequest("Outra liga", 1, "Outro treinador", team.id()));
+        assertThatThrownBy(() -> calendar.season(id, "Bearer " + foreign.accessToken())).isInstanceOf(
+            DefaultErrorException.class
+        );
+        assertThatThrownBy(() -> calendar.season(id, null)).isInstanceOf(DefaultErrorException.class);
+    }
+
+    @Test
     void rollsOverFromSundayToMondayWithOnlySevenDaysAndNoWallClockDependency() {
         var access = saves.create(
             new CreateLeagueRequest("Calendário", 1, "Treinador", catalog.teams(null).getFirst().id())

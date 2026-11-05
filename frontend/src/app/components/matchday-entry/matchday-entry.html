@@ -1,0 +1,5 @@
+<section class="match-hub" aria-label="Central da jornada">
+ <div class="hub-club"><div class="club-emblem"><img appClubCrest [clubId]="teamId()" [alt]="'Escudo do '+teamName()"></div><div><span class="hub-eyebrow">NO COMANDO DO CLUBE</span><h2>{{teamName()}}</h2><p>{{leagueName()}} <span>·</span> {{coach()}}</p></div></div>
+ <div class="hub-actions"><div class="journey-state"><span class="state-dot" [class.ready]="room().status==='READY'"></span><span>{{room().status==='READY'?'Tudo pronto para entrar em campo':'Preparação da jornada'}}<small>{{room().capacity===1?'Sua equipe, suas decisões':readyCount()+' de '+room().capacity+' treinadores prontos'}}</small></span></div>
+ <a class="kickoff-button" [href]="'#match/'+leagueId()"><span class="whistle-badge"><app-game-icon name="whistle"/></span><span class="kickoff-copy"><strong>Ir para a partida</strong><small>Acompanhar a jornada</small></span><app-game-icon class="kickoff-arrow" name="arrow"/></a></div>
+</section>

@@ -6,8 +6,8 @@
         @for(level of [25,50,75,100];track level){<polygon class="radar-grid" [attr.points]="[point(level,0),point(level,1),point(level,2),point(level,3),point(level,4),point(level,5)].join(' ')"/>}
         @for(axis of axes();track axis.name;let i=$index){<line class="radar-axis" x1="110" y1="110" [attr.x2]="point(100,i).split(',')[0]" [attr.y2]="point(100,i).split(',')[1]"/><text [attr.x]="label(i).x" [attr.y]="label(i).y" text-anchor="middle">{{axis.name}}</text>}
         <polygon class="radar-base" [attr.points]="basePolygon()"/>
-        @if(condition()&&condition()!.available&&condition()!.performanceFactor<1){<polygon class="radar-current" [attr.points]="currentPolygon()"/>}
-      </svg><p><i></i> Capacidade base @if(condition()&&condition()!.performanceFactor<1){<span>◌ Rendimento atual</span>}</p></div>
+        @if(condition()&&condition()!.available&&currentFactor()<1){<polygon class="radar-current" [attr.points]="currentPolygon()"/>}
+      </svg><p><i></i> Capacidade base @if(condition()&&currentFactor()<1){<span>◌ Rendimento atual</span>}</p></div>
       <div class="technical-context"><span>POTENCIAL ESTIMADO</span><strong>{{profile.potential}}<small> / 99</small></strong><p>O atleta pode evoluir em cada atributo. Desgaste e lesões afetam o rendimento em campo, sem reduzir seus atributos de base.</p>@if(condition();as state){<div class="availability" [class.unavailable]="!state.available">{{status()}} <b>{{state.available?state.effectiveAbility:'—'}}</b><small>Habilidade atual</small></div>}</div></div>
       <div class="attribute-navigation" role="group" aria-label="Grupo de atributos">@for(item of groups;track item.id){<button type="button" [class.active]="group()===item.id" [attr.aria-pressed]="group()===item.id" (click)="selectGroup(item.id)">{{item.name}}</button>}</div>
       <table class="attribute-table">

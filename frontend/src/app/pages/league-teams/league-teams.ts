@@ -21,6 +21,8 @@ export class LeagueTeamsPage implements OnInit {
   private readonly cache = new Map<number,LeagueTeamDetails>();
   readonly data = signal<LeagueTeams|null>(null);
   readonly query = signal('');
+  readonly scope = signal<'all'|'own'|'other'>('all');
+  readonly country = signal('');
   readonly competition = signal<number|null>(null);
   readonly selectedId = signal<number|null>(null);
   readonly detail = signal<LeagueTeamDetails|null>(null);
@@ -28,16 +30,33 @@ export class LeagueTeamsPage implements OnInit {
   readonly rosterLoading = signal(false);
   readonly error = signal('');
   readonly rosterError = signal('');
-  readonly competitions = computed(() => [...new Map((this.data()?.teams || []).map(t => [t.leagueId,t])).values()]);
-  readonly visible = computed(() => (this.data()?.teams || []).filter(t => t.id !== this.data()?.ownTeamId &&
-    (this.competition() === null || t.leagueId === this.competition()) && normalize(t.name).includes(normalize(this.query().trim()))));
+  readonly scopedTeams = computed(() => (this.data()?.teams || []).filter(t => t.id !== this.data()?.ownTeamId &&
+    (this.scope()==='all'||(this.scope()==='own'?t.leagueId===this.data()?.ownLeagueId:t.leagueId!==this.data()?.ownLeagueId))));
+  readonly countries = computed(() => [...new Set(this.scopedTeams().map(t=>t.country))].sort((a,b)=>a.localeCompare(b,'pt-BR')));
+  readonly competitions = computed(() => [...new Map(this.scopedTeams().filter(t=>!this.country()||t.country===this.country()).map(t => [t.leagueId,t])).values()]);
+  readonly visible = computed(() => this.scopedTeams().filter(t => (!this.country()||t.country===this.country()) &&
+    (this.competition() === null || t.leagueId === this.competition()) && normalize([t.name,t.shortName,t.country,t.leagueName].join(' ')).includes(normalize(this.query().trim()))));
+
+  setScope(scope:'all'|'own'|'other'):void {
+    this.scope.set(scope);this.country.set('');this.competition.set(null);this.query.set('');this.reconcileSelection();
+  }
+  setCountry(country:string):void {this.country.set(country);this.competition.set(null);this.reconcileSelection();}
+  setCompetition(competition:number|null):void {this.competition.set(competition);this.reconcileSelection();}
+  search(query:string):void {this.query.set(query);this.reconcileSelection();}
+  clearFilters():void {this.setScope('all');}
+  private reconcileSelection():void {
+    const teams=this.visible();
+    if(teams.some(t=>t.id===this.selectedId()))return;
+    if(teams.length){this.select(teams[0]);return;}
+    this.request?.unsubscribe();this.selectedId.set(null);this.detail.set(null);this.rosterError.set('');this.rosterLoading.set(false);
+  }
 
   ngOnInit(): void { this.load(); }
   load(): void {
     this.loading.set(true);this.error.set('');this.cache.clear();
     this.request?.unsubscribe();this.detail.set(null);this.selectedId.set(null);this.rosterError.set('');
     this.api.teams(this.saveId()).pipe(finalize(()=>this.loading.set(false)),takeUntilDestroyed(this.destroy)).subscribe({
-      next: data => {const first=!this.data();this.data.set(data);if(first)this.competition.set(data.ownLeagueId);const team=this.visible()[0];if(team)this.select(team);},
+      next: data => {this.data.set(data);this.reconcileSelection();},
       error: e => this.error.set(e.error?.message || 'Não foi possível consultar os clubes. Tente novamente.')
     });
   }

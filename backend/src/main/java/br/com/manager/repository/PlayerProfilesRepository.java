@@ -34,10 +34,14 @@ public class PlayerProfilesRepository {
             SELECT p.name FROM save_members m
             JOIN save_lineups l ON l.save_id=m.save_id AND l.team_id=m.team_id
             JOIN save_players p ON p.save_id=l.save_id AND p.player_id=l.player_id
-            JOIN game_saves s ON s.id=m.save_id
+            JOIN game_saves s ON s.id=m.save_id JOIN save_teams t ON t.save_id=m.save_id AND t.team_id=m.team_id
             LEFT JOIN save_player_profiles pr ON pr.save_id=p.save_id AND pr.player_id=p.player_id
             WHERE m.save_id=:saveId AND m.id=:memberId
-              AND (p.fitness<40 OR (pr.injury_name IS NOT NULL AND TRIM(pr.injury_name)<>'' AND (pr.return_round IS NULL OR pr.return_round>s.round_number)))
+              AND (p.fitness<40 OR (pr.injury_name IS NOT NULL AND TRIM(pr.injury_name)<>'' AND (pr.return_round IS NULL OR pr.return_round>COALESCE(t.calendar_day,s.round_number)))
+                OR EXISTS(SELECT 1 FROM match_player_seasons ds WHERE ds.save_id=p.save_id AND ds.player_id=p.player_id
+                  AND ds.suspension_remaining>0 AND ds.season_id=(SELECT nf.season_id FROM national_fixtures nf
+                    WHERE nf.save_id=p.save_id AND (nf.home_team_id=p.team_id OR nf.away_team_id=p.team_id)
+                      AND nf.status='SCHEDULED' ORDER BY nf.match_date,nf.id LIMIT 1)))
             """,
             new MapSqlParameterSource("saveId", saveId).addValue("memberId", memberId),
             new SingleColumnRowMapper<>(String.class)

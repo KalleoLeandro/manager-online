@@ -4,6 +4,7 @@ import br.com.manager.models.dto.PresenceDto;
 import br.com.manager.models.events.LeagueDeletedEvent;
 import br.com.manager.models.events.SaveChangedEvent;
 import br.com.manager.models.events.TeamUpdatedEvent;
+import br.com.manager.models.events.MatchUpdatedEvent;
 import br.com.manager.models.responses.LeagueRoomResponse;
 import br.com.manager.models.responses.RealtimeSnapshotResponse;
 import br.com.manager.service.SaveService;
@@ -219,6 +220,11 @@ public class SaveSocketHandler extends TextWebSocketHandler {
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void matchUpdated(MatchUpdatedEvent event) {
+        deliverGameEvent(event.saveId(), "MATCH_UPDATED", Map.of("fixtureId", event.fixtureId(), "revision", event.revision()));
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void committed(SaveChangedEvent event) {
         var channel = channels.get(event.saveId());
         if (channel == null) return;
@@ -231,6 +237,11 @@ public class SaveSocketHandler extends TextWebSocketHandler {
             }
             broadcast(channel);
         }
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void committed(br.com.manager.models.events.TournamentDrawCreatedEvent event) {
+        deliverGameEvent(event.saveId(),"DRAW_CREATED",Map.of("editionId",event.editionId(),"stage",event.stage()));
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)

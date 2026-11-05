@@ -17,6 +17,14 @@ public class JuniorPlayersRepository {
         this.db = db;
     }
 
+    public String country(String id, Long team) {
+        return db.queryForObject(
+            "SELECT l.country FROM save_teams t JOIN catalog_leagues l ON l.id=t.league_id WHERE t.save_id=:id AND t.team_id=:team",
+            new MapSqlParameterSource("id", id).addValue("team", team),
+            (r, n) -> r.getString(1)
+        );
+    }
+
     private static final RowMapper<ManagedPlayerDto> ROW_MAPPER = (r, n) -> {
         var values = new LinkedHashMap<String, Integer>();
         for (var a : PlayerAttribute.values()) values.put(a.key(), r.getInt(a.key()));

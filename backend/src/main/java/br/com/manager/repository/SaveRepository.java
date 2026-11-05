@@ -38,7 +38,8 @@ public class SaveRepository {
             r.getString("status"),
             r.getString("catalog_version"),
             r.getInt("round_number"),
-            r.getTimestamp("last_activity_at").toInstant()
+            r.getTimestamp("last_activity_at").toInstant(),
+            r.getBoolean("local_multiplayer")
         );
 
     private static final RowMapper<MembershipDto> MEMBERSHIP_ROW_MAPPER = (r, n) ->
@@ -99,6 +100,58 @@ public class SaveRepository {
         );
     }
 
+    public void localMultiplayer(String id, boolean enabled) {
+        db.update(
+            "UPDATE game_saves SET local_multiplayer=:enabled WHERE id=:id",
+            new MapSqlParameterSource("id", id).addValue("enabled", enabled)
+        );
+    }
+
+    public void initialCalendar(String id, Long team) {
+        db.update(
+            """
+            UPDATE game_saves SET calendar_start_date=CASE
+                WHEN EXISTS(SELECT 1 FROM save_teams t JOIN catalog_leagues l ON l.id=t.league_id
+                    WHERE t.save_id=:id AND t.team_id=:team AND LOWER(l.country) IN ('brasil','brazil'))
+                THEN DATE '2026-01-01' ELSE DATE '2026-07-01' END WHERE id=:id
+            """,
+            new MapSqlParameterSource("id", id).addValue("team", team)
+        );
+    }
+
+    public boolean full(String id) {
+        return Boolean.TRUE.equals(
+            db.queryForObject(
+                "SELECT COUNT(m.id)>=s.capacity FROM game_saves s LEFT JOIN save_members m ON m.save_id=s.id WHERE s.id=:id GROUP BY s.capacity",
+                new MapSqlParameterSource("id", id),
+                Boolean.class
+            )
+        );
+    }
+
+    /** A newly formed mixed room starts before the Brazilian season; an ongoing league is never rewound. */
+    public void includeBrazilianCalendar(String id, Long team) {
+        db.update(
+            """
+            UPDATE game_saves SET calendar_start_date=DATE '2026-01-01'
+            WHERE id=:id AND round_number=1 AND calendar_start_date=DATE '2026-07-01'
+            AND EXISTS(SELECT 1 FROM save_teams t JOIN catalog_leagues l ON l.id=t.league_id
+                WHERE t.save_id=:id AND t.team_id=:team AND LOWER(l.country) IN ('brasil','brazil'))
+            AND NOT EXISTS(SELECT 1 FROM save_teams t WHERE t.save_id=:id AND t.calendar_day>1)
+            AND NOT EXISTS(SELECT 1 FROM match_sessions ms WHERE ms.save_id=:id)
+            AND NOT EXISTS(SELECT 1 FROM national_fixtures f WHERE f.save_id=:id AND f.status='PLAYED')
+            """,
+            new MapSqlParameterSource("id", id).addValue("team", team)
+        );
+    }
+
+    public void memberToken(String saveId, String memberId, String tokenHash) {
+        db.update(
+            "UPDATE save_members SET token_hash=:token WHERE save_id=:save AND id=:member",
+            new MapSqlParameterSource("save", saveId).addValue("member", memberId).addValue("token", tokenHash)
+        );
+    }
+
     public void snapshotCatalog(String id) {
         var params = new MapSqlParameterSource("saveId", id);
         db.update(
@@ -111,8 +164,8 @@ public class SaveRepository {
         );
         db.update(
             """
-            INSERT INTO save_players (save_id,player_id,team_id,name,position,level,ability,attribute1,value1,attribute2,value2,age,shirt_number,photo_url,nationality,generated,generation_origin)
-            SELECT :saveId,id,team_id,name,position,level,ability,attribute1,value1,attribute2,value2,age,shirt_number,photo_url,nationality,generated,generation_origin
+            INSERT INTO save_players (save_id,player_id,team_id,name,position,level,ability,attribute1,value1,attribute2,value2,age,shirt_number,photo_url,nationality,generated,generation_origin,market_value,valuation_version)
+            SELECT :saveId,id,team_id,name,position,level,ability,attribute1,value1,attribute2,value2,age,shirt_number,photo_url,nationality,generated,generation_origin,market_value,valuation_version
             FROM catalog_players
             """,
             params
@@ -123,6 +176,45 @@ public class SaveRepository {
                 ") SELECT :saveId,pr.player_id,pr.reference_ability,pr.potential,pr.source_mask,pr.source_name,pr.source_url,'SNAPSHOT'," +
                 PlayerAttribute.selection("pr") +
                 " FROM catalog_player_profiles pr JOIN save_players p ON p.save_id=:saveId AND p.player_id=pr.player_id",
+            params
+        );
+    }
+
+    /** Adds only newly catalogued clubs. Existing rosters, transfers and league progress remain authoritative. */
+    public void expandCatalog(String id) {
+        var params = new MapSqlParameterSource("saveId", id);
+        var missing = db.queryForList(
+            "SELECT c.id FROM catalog_teams c WHERE NOT EXISTS(SELECT 1 FROM save_teams t WHERE t.save_id=:saveId AND t.team_id=c.id)",
+            params,
+            Long.class
+        );
+        if (missing.isEmpty()) return;
+        params.addValue("teams", missing);
+        db.update(
+            """
+            INSERT INTO save_teams(save_id,team_id,league_id,name,short_name,abbreviation,crest_url,rating,selectable)
+            SELECT :saveId,id,league_id,name,short_name,abbreviation,crest_url,rating,selectable
+            FROM catalog_teams WHERE id IN (:teams)
+            """,
+            params
+        );
+        db.update(
+            """
+            INSERT INTO save_players(save_id,player_id,team_id,name,position,level,ability,attribute1,value1,attribute2,value2,
+                age,shirt_number,photo_url,nationality,generated,generation_origin,market_value,valuation_version)
+            SELECT :saveId,p.id,p.team_id,p.name,p.position,p.level,p.ability,p.attribute1,p.value1,p.attribute2,p.value2,
+                p.age,p.shirt_number,p.photo_url,p.nationality,p.generated,p.generation_origin,p.market_value,p.valuation_version
+            FROM catalog_players p WHERE p.team_id IN (:teams)
+            AND NOT EXISTS(SELECT 1 FROM save_players sp WHERE sp.save_id=:saveId AND sp.player_id=p.id)
+            """,
+            params
+        );
+        db.update(
+            "INSERT INTO save_player_profiles(save_id,player_id,reference_ability,potential,source_mask,source_name,source_url,origin," +
+                PlayerAttribute.columns() +
+                ") SELECT :saveId,pr.player_id,pr.reference_ability,pr.potential,pr.source_mask,pr.source_name,pr.source_url,'SNAPSHOT'," +
+                PlayerAttribute.selection("pr") +
+                " FROM catalog_player_profiles pr JOIN save_players p ON p.save_id=:saveId AND p.player_id=pr.player_id WHERE p.team_id IN (:teams) AND NOT EXISTS(SELECT 1 FROM save_player_profiles sp WHERE sp.save_id=:saveId AND sp.player_id=pr.player_id)",
             params
         );
     }
@@ -180,8 +272,11 @@ public class SaveRepository {
 
     public void setStatus(String id, String status) {
         db.update(
-            "UPDATE game_saves SET status=:status WHERE id=:saveId",
-            new MapSqlParameterSource().addValue("saveId", id).addValue("status", status)
+            "UPDATE game_saves SET status=:status,matchday_pending=:pending WHERE id=:saveId",
+            new MapSqlParameterSource()
+                .addValue("saveId", id)
+                .addValue("status", status)
+                .addValue("pending", status.equals("READY"))
         );
     }
 

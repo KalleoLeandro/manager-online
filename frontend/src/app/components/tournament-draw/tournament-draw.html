@@ -1,0 +1,12 @@
+<dialog #dialog class="draw-dialog" aria-labelledby="draw-title" (cancel)="$event.preventDefault()">
+ @if(active();as draw){
+ <header><span class="eyebrow">CERIMÔNIA DO SORTEIO · {{draw.date}}</span><h2 id="draw-title">{{draw.competition}}</h2><p>{{draw.stage}}</p></header>
+ <div class="draw-stage" aria-hidden="true"><div class="draw-ball">{{count()||'?'}}</div><div><small>{{count() < draw.rows.length?'REVELANDO OS CONFRONTOS':'SORTEIO CONCLUÍDO'}}</small><strong>{{rows().at(-1)?.club?.name||'Preparando os potes…'}}</strong></div></div>
+ <p class="draw-progress" role="status">{{count()}} de {{draw.rows.length}} linhas reveladas · Mesmo resultado para todos os treinadores</p>
+ <div #table class="draw-table" tabindex="0" aria-label="Tabela do sorteio"><table><thead><tr><th>Clube</th><th>Adversários · C: casa / V: visitante</th></tr></thead><tbody>
+ @for(row of rows();track row.club.id){<tr><td><span><img appClubCrest [clubId]="row.club.id" alt="">{{row.club.name}}</span></td><td><div class="opponents">@for(opponent of row.opponents;track $index){<span><img appClubCrest [clubId]="opponent.id" alt="">{{opponent.name}} ({{opponent.venue}})</span>}</div></td></tr>}
+ </tbody></table></div>
+ @if(error()){<p role="alert">{{error()}}</p>}
+ <footer><button type="button" [disabled]="count()===draw.rows.length" (click)="revealAll.set(true)">Ver tabela completa</button><button type="button" class="primary" [disabled]="busy()||count() < draw.rows.length" (click)="close()">{{busy()?'Confirmando…':'Concluir'}}</button></footer>
+ }
+</dialog>

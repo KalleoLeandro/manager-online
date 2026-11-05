@@ -26,9 +26,12 @@ services:
     volumes:
       - ./backend/src/main/resources/res/players:/app/portraits:ro
       - ./backend/src/main/resources/res/crests:/app/crests:ro
+      - ./backend/src/main/resources/res/trophies:/app/trophies:ro
     environment:
       PLAYER_PORTRAITS_DIR: /app/portraits
+      VAR_REVIEW_DENOMINATOR: ${VAR_REVIEW_DENOMINATOR:-12}
       CLUB_CRESTS_DIR: /app/crests
+      TROPHY_IMAGES_DIR: /app/trophies
       DATABASE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-manager}
       DATABASE_USER: ${POSTGRES_USER:-manager}
       DATABASE_PASSWORD: ${POSTGRES_PASSWORD:?Configure POSTGRES_PASSWORD no arquivo .env}

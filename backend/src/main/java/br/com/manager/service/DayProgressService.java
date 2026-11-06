@@ -53,13 +53,10 @@ public class DayProgressService {
         this.tournaments = tournaments;
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public DayProgressResponse state(String id, String token) {
-        saves.authorizedRoom(id, token);
+        saves.summary(id, token);
         var member = saves.realtimeMember(id, token.substring(7));
-        var date = repository.date(id, member.teamId());
-        seasons.ensureForDate(id, date);
-        world.synchronize(id);
         return response(id, member.teamId(), 0, "");
     }
 
@@ -81,9 +78,9 @@ public class DayProgressService {
     @Transactional
     public DayProgressResponse advance(String id, String token, AdvanceDaysRequest input) {
         if (!leagues.lock(id)) throw new DefaultErrorException(HttpStatus.NOT_FOUND, "Liga não encontrada.");
-        var room = saves.authorizedRoom(id, token);
+        var room = saves.summary(id, token);
         var member = saves.realtimeMember(id, token.substring(7));
-        if (room.status().equals("LIVE") || member.ready()) fail(
+        if (room.status().equals("LIVE") || (room.capacity() > 1 && !room.localMultiplayer() && member.ready())) fail(
             "Aguarde todos os jogos terminarem e retire sua prontidão antes de avançar os dias."
         );
         finances.requireApproved(id, member.teamId());

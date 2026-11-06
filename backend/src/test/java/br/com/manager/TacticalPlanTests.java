@@ -136,7 +136,7 @@ class TacticalPlanTests {
         plan.tempo = 101;
         assertThatThrownBy(() -> TacticalPlanRules.validate(plan, starters)).isInstanceOf(DefaultErrorException.class);
         var access = saves.create(
-            new CreateLeagueRequest("Plano bloqueado", 1, "Treinador", catalog.teams(null).getFirst().id())
+            new CreateLeagueRequest("Plano bloqueado", 2, "Treinador", catalog.teams(null).getFirst().id())
         );
         var id = access.room().id();
         var token = "Bearer " + access.accessToken();

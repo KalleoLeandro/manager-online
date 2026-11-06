@@ -1,3 +1,5 @@
+import { DayProgressService } from '../../services/day-progress.service';
+import {LeagueExit} from '../../components/league-exit/league-exit';
 import {narrationRoster,narrationParts} from '../../utils/match-narration';
 import { MatchOptions } from '../../components/match-options/match-options';
 import { MatchTouchline } from '../../components/match-touchline/match-touchline';
@@ -24,7 +26,7 @@ import { GameIcon } from '../../components/game-icon/game-icon';
 import { MatchAudioService } from '../../services/match-audio.service';
 import { VarReview } from '../../components/var-review/var-review';
 
-@Component({selector:'app-matchday',providers:[SaveRealtimeService],imports:[MatchOptions,MatchTouchline,MatchPanel,LocalPlayers,VarReview,GameIcon,GoalCelebration,FormsModule,ClubCrest,LiveStatus,MatchStatistics],templateUrl:'./matchday.html',styleUrl:'./matchday.css'})
+@Component({selector:'app-matchday',providers:[SaveRealtimeService],imports:[LeagueExit,MatchOptions,MatchTouchline,MatchPanel,LocalPlayers,VarReview,GameIcon,GoalCelebration,FormsModule,ClubCrest,LiveStatus,MatchStatistics],templateUrl:'./matchday.html',styleUrl:'./matchday.css'})
 export class MatchdayPage implements OnInit {
  private readonly api=inject(MatchdayService);private readonly saves=inject(SaveService);private readonly destroy=inject(DestroyRef);
  readonly localRoom=computed(()=>this.realtime.room()||this.saves.access(this.id)?.room||null);
@@ -35,7 +37,9 @@ export class MatchdayPage implements OnInit {
  readonly eventFilter=signal('ALL');
  togglePanel(id:MatchPanelId):void{this.layout.toggle(id);if(this.layout.visible(id)){if(id==='stats'||id==='scores')this.rightTab.set(id);if(id==='lineups'&&['stats','scores'].includes(this.rightTab()))this.rightTab.set('home');}}
  setRightTab(tab:'home'|'away'|'stats'|'scores'):void{this.rightTab.set(tab);this.layout.reveal(tab==='stats'?'stats':tab==='scores'?'scores':'lineups');}
+ readonly network=computed(()=>{const room=this.realtime.room()||this.localRoom();return this.data()?.localMultiplayer===true?false:room?room.capacity>1&&!room.localMultiplayer:true;});
  readonly decisionRequired=computed(()=>!!this.own()&&!!this.match()?.canResume&&!!this.match()?.awaitingCoachDecision);
+ private readonly calendar=inject(DayProgressService);readonly gameDay=signal(false);
  readonly speedBusy=signal(false);
  readonly data=signal<Matchday|null>(null);readonly error=signal('');readonly busy=signal(false);readonly loading=signal(false);
  readonly selected=signal<number|undefined>(/^\d+$/.test(currentPath().split('/')[2]||'')?Number(currentPath().split('/')[2]):undefined);readonly importantOnly=signal(false);readonly notice=signal('');
@@ -59,6 +63,7 @@ export class MatchdayPage implements OnInit {
   this.refreshes.pipe(auditTime(150),takeUntilDestroyed(this.destroy)).subscribe(()=>this.load());
   this.realtime.gameEvents$.pipe(takeUntilDestroyed(this.destroy)).subscribe(e=>{if(e.event==='MATCH_UPDATED'){if((e.payload as {fixtureId:number}).fixtureId===0)this.selected.set(undefined);this.refreshes.next();}});
   interval(5000).pipe(takeUntilDestroyed(this.destroy)).subscribe(()=>this.refreshes.next());
+  this.calendar.state(this.id).pipe(takeUntilDestroyed(this.destroy)).subscribe({next:p=>this.gameDay.set(!!p.nextMatch&&p.currentDate===p.nextMatch),error:e=>this.error.set(e.error?.message||'Não foi possível verificar a data da partida.')});
   this.load();
  }
  load():void {
@@ -67,12 +72,17 @@ export class MatchdayPage implements OnInit {
    if(requested!==this.selected()){this.again=true;return;}
    const current=this.match();if(current&&d.selected?.fixtureId===current.fixtureId&&d.selected.revision<current.revision)return;
    if(!current&&d.selected)this.rightTab.set(d.selected.away.id===d.ownTeamId?'away':'home');
+   if(!current&&requested===undefined&&d.selected?.status==='FINISHED')d={...d,selected:null};
    this.data.set(d);
+   const ownPending=d.matches.find(game=>(game.homeId===d.ownTeamId||game.awayId===d.ownTeamId)&&game.status==='PAUSED');
+   if(ownPending&&d.selected?.fixtureId!==ownPending.fixtureId){this.selected.set(ownPending.fixtureId);this.again=true;return;}
+   if(d.selected?.status==='PAUSED'&&(d.selected.canResume||d.selected.awaitingCoachDecision&&d.selected.pendingCoachTeams.includes(d.ownTeamId))&&!d.selected.varReview&&d.selected.goalCelebrationRemainingMillis<=0){location.hash=`match-tactics/${this.id}/${d.selected.fixtureId}`;}
+
   },error:e=>this.error.set(e.error?.message||'Não foi possível atualizar a partida.')});
  }
  changeSpeed(percent:number):void{if(this.speedBusy()||!(this.data()?.canChangeSpeed||this.data()?.localMultiplayer&&this.saves.localOwner(this.id)))return;this.speedBusy.set(true);this.error.set('');const selected=this.match()?.fixtureId;this.api.speed(this.id,percent,selected).pipe(finalize(()=>this.speedBusy.set(false)),takeUntilDestroyed(this.destroy)).subscribe({next:data=>{if(this.match()?.fixtureId===selected)this.data.set(data);else this.refreshes.next();},error:e=>{this.error.set(e.error?.message||'Não foi possível alterar a velocidade.');this.refreshes.next();}});}
  select(fixture:number):void{this.selected.set(fixture);this.error.set('');this.load();}
- start():void{if(this.busy())return;this.busy.set(true);this.api.start(this.id).pipe(finalize(()=>this.busy.set(false)),takeUntilDestroyed(this.destroy)).subscribe({next:d=>this.data.set(d),error:e=>this.error.set(e.error?.message||'Não foi possível iniciar a jornada.')});}
+ start():void{if(this.busy()||!this.gameDay())return;this.busy.set(true);this.api.start(this.id).pipe(finalize(()=>this.busy.set(false)),takeUntilDestroyed(this.destroy)).subscribe({next:d=>this.data.set(d),error:e=>this.error.set(e.error?.message||'Não foi possível iniciar a jornada.')});}
  openTactics():void{const m=this.match();if(!m||!this.own()||this.busy())return;this.error.set('');this.busy.set(true);this.api.action(this.id,m.fixtureId,{type:'OPEN_TACTICS',revision:m.revision}).pipe(finalize(()=>this.busy.set(false)),takeUntilDestroyed(this.destroy)).subscribe({next:()=>location.hash=`match-tactics/${this.id}/${m.fixtureId}`,error:e=>{this.error.set(e.error?.message||'Não foi possível abrir os ajustes.');this.refreshes.next();}});}
  command(type:'RESUME'|TouchlineCommand):void{const m=this.match();if(!m||this.busy())return;this.error.set('');this.busy.set(true);this.api.action(this.id,m.fixtureId,{type,revision:m.revision}).pipe(finalize(()=>this.busy.set(false)),takeUntilDestroyed(this.destroy)).subscribe({next:d=>{this.data.set(d);this.refreshes.next();},error:e=>{this.error.set(e.error?.message||'Não foi possível confirmar os ajustes.');this.refreshes.next();}});}
  acceptEvent(type:string):boolean{const filter=this.eventFilter();return filter==='ALL'||filter==='GOALS'&&['GOAL','GOAL_DISALLOWED','VAR_REVIEW','VAR_DECISION','GOAL_PENDING'].includes(type)||filter==='CARDS'&&['YELLOW','RED','REFEREE_NOTICE','COACH_WARNING','COACH_RED'].includes(type)||filter==='SUBS'&&type==='SUBSTITUTION';}

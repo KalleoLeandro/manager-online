@@ -62,6 +62,10 @@ public class ManagerRepository {
         );
     }
 
+    public void revokeSession(String tokenHash) {
+        db.update("DELETE FROM manager_sessions WHERE token_hash=:hash", new MapSqlParameterSource("hash",tokenHash));
+    }
+
     public void createSession(String tokenHash, String managerId, Instant expiresAt) {
         db.update(
             "INSERT INTO manager_sessions (token_hash,manager_id,expires_at) VALUES (:tokenHash,:managerId,:expiresAt)",

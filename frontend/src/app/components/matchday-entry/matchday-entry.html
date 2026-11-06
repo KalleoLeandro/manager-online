@@ -1,5 +1,11 @@
-<section class="match-hub" aria-label="Central da jornada">
- <div class="hub-club"><div class="club-emblem"><img appClubCrest [clubId]="teamId()" [alt]="'Escudo do '+teamName()"></div><div><span class="hub-eyebrow">NO COMANDO DO CLUBE</span><h2>{{teamName()}}</h2><p>{{leagueName()}} <span>·</span> {{coach()}}</p></div></div>
- <div class="hub-actions"><div class="journey-state"><span class="state-dot" [class.ready]="room().status==='READY'"></span><span>{{room().status==='READY'?'Tudo pronto para entrar em campo':'Preparação da jornada'}}<small>{{room().capacity===1?'Sua equipe, suas decisões':readyCount()+' de '+room().capacity+' treinadores prontos'}}</small></span></div>
- <a class="kickoff-button" [href]="'#match/'+leagueId()"><span class="whistle-badge"><app-game-icon name="whistle"/></span><span class="kickoff-copy"><strong>Ir para a partida</strong><small>Acompanhar a jornada</small></span><app-game-icon class="kickoff-arrow" name="arrow"/></a></div>
+<section class="match-ticket" aria-label="Ingresso da partida" [style.--home-color]="ticket()?.homeColor||'#334155'" [style.--home-secondary]="ticket()?.homeSecondary||'#ffffff'" [style.--away-color]="ticket()?.awayColor||'#334155'" [style.--away-secondary]="ticket()?.awaySecondary||'#ffffff'">
+ <header><span><app-game-icon name="trophy"/>{{ticket()?.competition||leagueName()}}</span><span>{{playing()?'EM ANDAMENTO':'PRÓXIMA PARTIDA'}}</span></header>
+ <div class="ticket-clubs">
+  <div class="ticket-club home"><span class="venue">CASA</span><img appClubCrest [clubId]="ticket()?.homeId||teamId()" [alt]="'Escudo do '+(ticket()?.homeName||teamName())"><strong>{{ticket()?.homeName||teamName()}}</strong></div>
+  <div class="ticket-divider"><span>VS</span></div>
+  <div class="ticket-club away"><span class="venue">VISITANTE</span>@if(ticket();as game){<img appClubCrest [clubId]="game.awayId" [alt]="'Escudo do '+game.awayName">}<strong>{{ticket()?.awayName||'Adversário a definir'}}</strong></div>
+ </div>
+ <footer><div class="ticket-date"><app-game-icon name="calendar"/><span>{{ticket()?.date?.split('-')?.reverse()?.join('/')||'Calendário da temporada'}}<small>{{playing()?'Seu jogo está em andamento':hint()}}</small></span></div><button type="button" class="kickoff-button" [disabled]="!available()||busy()||disabled()" (click)="enter()"><app-game-icon name="whistle"/><span><strong>{{busy()?'Preparando partida…':'Ir para a partida'}}</strong><small>{{playing()?'Continuar partida':'Entrar em campo'}}</small></span><app-game-icon name="arrow"/></button></footer>
 </section>
+
+@if(error()){<p class="entry-error" role="alert">{{error()}}</p>}

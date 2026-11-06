@@ -11,6 +11,7 @@ import { TrophyImage } from '../trophy-image/trophy-image';
 import { seasonTrophies } from '../../utils/trophies';
 @Component({selector:'app-season-budget',imports:[FormsModule,CurrencyPipe,ClubCrest,GameIcon,TrophyImage,MoneyInput],templateUrl:'./season-budget.html',styleUrl:'./season-budget.css'})
 export class SeasonBudget {
+ readonly showSummary=input(true);
  readonly leagueId=input.required<string>();readonly teamId=input.required<number>();readonly teamName=input('');readonly revision=input(0);readonly round=input(0);readonly suspended=input(false);readonly disabled=input(false);readonly changed=output<void>();readonly finances=output<void>();readonly clearance=output<boolean>();
  private readonly api=inject(FinanceService);private readonly destroy=inject(DestroyRef);private readonly dialog=viewChild<ElementRef<HTMLDialogElement>>('dialog');
  readonly data=signal<FinanceState|null>(null);readonly error=signal('');readonly busy=signal(false);readonly loading=signal(false);

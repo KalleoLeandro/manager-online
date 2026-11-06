@@ -39,6 +39,7 @@ public class MatchdayService {
     private final FinanceDailyService financialDays;
     private final WorldCompetitionService world;
     private final TournamentService tournaments;
+    private final DayProgressRepository calendar;
     private final SecureRandom random = new SecureRandom();
 
     public MatchdayService(
@@ -56,7 +57,8 @@ public class MatchdayService {
         FinanceService finances,
         FinanceDailyService financialDays,
         WorldCompetitionService world,
-        TournamentService tournaments
+        TournamentService tournaments,
+        DayProgressRepository calendar
     ) {
         this.repository = repository;
         this.leagues = leagues;
@@ -73,6 +75,7 @@ public class MatchdayService {
         this.financialDays = financialDays;
         this.world = world;
         this.tournaments = tournaments;
+        this.calendar = calendar;
     }
 
     private LeagueMemberDto member(String id, String header) {
@@ -123,6 +126,7 @@ public class MatchdayService {
                 );
             })
             .toList();
+        if(selected!=null)br.com.manager.utils.PlayerMatchRatings.refresh(selected);
         var detail =
             selected == null
                 ? null
@@ -163,7 +167,8 @@ public class MatchdayService {
                       selected.competitionName,
                       selected.homePenalties,
                       selected.awayPenalties,
-                      selected.cupMatch
+                      selected.cupMatch,
+                      selected.halfTimeBreak
                   );
         return new MatchdayResponse(
             selected == null ? repository.date(id).toString() : selected.date,
@@ -192,7 +197,8 @@ public class MatchdayService {
                 .toList(),
             repository.speed(id),
             member.owner() && (saves.room(id).capacity() == 1 || saves.room(id).localMultiplayer()),
-            saves.room(id).localMultiplayer()
+            saves.room(id).localMultiplayer(),
+            repository.nextTicket(id,member.teamId()).orElse(null)
         );
     }
 
@@ -233,7 +239,15 @@ public class MatchdayService {
     @Transactional
     public void start(String id, String header) {
         lock(id);
-        member(id, header);
+        var coach = member(id, header);
+        if (!saves.room(id).status().equals("LIVE")) {
+            var next = calendar.nextMatch(id, coach.teamId());
+            if (next == null || !next.equals(calendar.date(id, coach.teamId())))
+                conflict("A partida só pode ser iniciada no dia do jogo. Avance pelo calendário.");
+            var first = repository.nextHumanDate(id);
+            if (first.isPresent() && !next.equals(first.get()))
+                conflict("Aguarde os jogos anteriores dos outros treinadores.");
+        }
         startLocked(id);
     }
 
@@ -241,9 +255,12 @@ public class MatchdayService {
         int speed = repository.speed(id);
         var room = saves.room(id);
         if (room.status().equals("LIVE")) return;
-        if (!room.status().equals("READY")) conflict(
+        boolean network=room.capacity()>1&&!room.localMultiplayer();
+        if(room.members().size()!=room.capacity())conflict("Cadastre todos os treinadores antes de iniciar a jornada.");
+        if (network&&(!room.status().equals("READY")||room.members().stream().anyMatch(m->!m.ready()))) conflict(
             "Todos os participantes devem confirmar a preparação antes de avançar."
         );
+        for(var participant:room.members())profiles.requireAvailableStarters(id,participant.id());
         var current = repository.date(id);
         seasons.ensureForDate(id, current);
         world.synchronize(id);
@@ -423,10 +440,8 @@ public class MatchdayService {
     public void tick(String id) {
         if (!leagues.lock(id)) return;
         var status = saves.room(id).status();
-        if (status.equals("READY")) {
-            if (repository.pending(id)) startLocked(id);
-            return;
-        }
+        // Readiness never starts a game. Only the explicit matchday/start command does.
+        if (status.equals("READY")) return;
         if (!status.equals("LIVE")) return;
         var now = clock.instant();
         var rows = repository.currentDay(id);
@@ -635,7 +650,22 @@ public class MatchdayService {
             !s.pendingCoachTeams.contains(team.id) &&
             Set.of("SUBSTITUTE", "TACTICS", "PENALTY_TAKER").contains(input.type())
         ) conflict("Abra Táticas e formação para revisar os ajustes já confirmados.");
+        br.com.manager.utils.PlayerMatchRatings.refresh(s);
         switch (input.type()) {
+            case "TALK_PRAISE", "TALK_ENCOURAGE", "TALK_CRITICIZE" -> br.com.manager.utils.HalfTimeTalkRules.talk(s,team,input.playerIn(),input.type());
+            case "SWAP_POSITIONS" -> {
+                if(!s.status.equals("PAUSED")||!s.awaitingCoachDecision||!s.pendingCoachTeams.contains(team.id)) conflict("Abra as táticas antes de trocar as posições.");
+                var a=MatchEngine.active(team).stream().filter(p->input.playerOut()!=null&&p.id==input.playerOut()).findFirst().orElse(null);
+                var b=MatchEngine.active(team).stream().filter(p->input.playerIn()!=null&&p.id==input.playerIn()).findFirst().orElse(null);
+                if(a==null||b==null||a.id==b.id)conflict("Escolha dois atletas disponíveis em campo.");
+                int slot=a.slot;a.slot=b.slot;b.slot=slot;
+                String role=a.assignedPosition==null?a.position:a.assignedPosition;
+                br.com.manager.utils.PlayerPositionRules.assign(a,b.assignedPosition==null?b.position:b.assignedPosition);
+                br.com.manager.utils.PlayerPositionRules.assign(b,role);
+                var pa=team.tacticalPlan.positions.remove(a.id);var pb=team.tacticalPlan.positions.remove(b.id);
+                if(pa!=null)team.tacticalPlan.positions.put(b.id,pa);if(pb!=null)team.tacticalPlan.positions.put(a.id,pb);
+                MatchEngine.event(s,"TACTICS",team,a,b,a.name+" trocou de posição com "+b.name+".");
+            }
             case "ENCOURAGE", "DEMAND", "CALM", "COMPLAIN" -> {
                 br.com.manager.utils.TouchlineRules.command(s, team, input.type(), clock.instant().toEpochMilli());
                 s.engineVersion = MatchEngine.CURRENT_VERSION;
@@ -798,6 +828,7 @@ public class MatchdayService {
             }
             default -> throw new DefaultErrorException(HttpStatus.BAD_REQUEST, "Comando de partida inválido.");
         }
+        br.com.manager.utils.PlayerMatchRatings.refresh(s);
         s.revision++;
         repository.save(id, s, row.nextTick());
         lifecycle.touch(id);

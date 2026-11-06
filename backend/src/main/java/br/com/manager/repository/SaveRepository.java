@@ -61,6 +61,16 @@ public class SaveRepository {
         );
     }
 
+    public Set<String> revokeAccountLeagueTokens(String managerId) {
+        var hashes=new HashSet<>(db.query("""
+            SELECT m.token_hash FROM save_members m WHERE m.manager_id=:manager OR EXISTS(
+              SELECT 1 FROM save_members owner JOIN game_saves g ON g.id=owner.save_id
+              WHERE owner.save_id=m.save_id AND owner.manager_id=:manager AND owner.owner=TRUE AND g.local_multiplayer=TRUE)
+            """,new MapSqlParameterSource("manager",managerId),(r,n)->r.getString(1)));
+        if(!hashes.isEmpty())db.update("UPDATE save_members SET token_hash=CONCAT(:nonce,REPLACE(id,'-','')) WHERE token_hash IN (:hashes)",new MapSqlParameterSource("hashes",hashes).addValue("nonce",UUID.randomUUID().toString().replace("-","")));
+        return hashes;
+    }
+
     public List<String> memberIdsForAccount(String saveId, String managerId) {
         return db.query(
             "SELECT id FROM save_members WHERE save_id=:saveId AND manager_id=:managerId",
@@ -276,7 +286,7 @@ public class SaveRepository {
             new MapSqlParameterSource()
                 .addValue("saveId", id)
                 .addValue("status", status)
-                .addValue("pending", status.equals("READY"))
+                .addValue("pending", false)
         );
     }
 

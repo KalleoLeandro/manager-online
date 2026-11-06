@@ -43,6 +43,24 @@ class AuthFlowTests {
     }
 
     @Test
+    void logoutRevokesSessionAndLegacyLeagueTokensWithoutDeletingLeagueOrOtherSessions(){
+        String email=UUID.randomUUID()+"@example.com";
+        registration.register(new RegistrationRequest("Coach",email,"Password123!","Password123!",null,"Test"));
+        var session=auth.login(email,"Password123!");var otherSession=auth.login(email,"Password123!");
+        String header="Bearer "+session.accessToken();
+        var league=saves.createForAccount(new CreateLeagueRequest("Logout league",1,"Coach",catalog.teams(null).getFirst().id()),header);
+        assertThat(saves.authorizedRoom(league.room().id(),"Bearer "+league.accessToken())).isNotNull();
+        auth.logout(header);
+        assertThat(auth.find(session.accessToken())).isNull();
+        assertThatThrownBy(()->saves.mine(header)).isInstanceOf(DefaultErrorException.class);
+        assertThatThrownBy(()->saves.authorizedRoom(league.room().id(),"Bearer "+league.accessToken())).isInstanceOf(DefaultErrorException.class);
+        assertThat(saves.mine("Bearer "+otherSession.accessToken())).hasSize(1);
+        var loginAgain=auth.login(email,"Password123!");
+        assertThat(saves.mine("Bearer "+loginAgain.accessToken()).getFirst().room().id()).isEqualTo(league.room().id());
+        assertThatCode(()->auth.logout(header)).doesNotThrowAnyException();
+    }
+
+    @Test
     void newAccountHasNoSavesAndCreatedSaveBelongsToAccount() {
         var owner = account();
         var header = "Bearer " + owner.accessToken();

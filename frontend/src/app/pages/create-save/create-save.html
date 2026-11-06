@@ -1,5 +1,5 @@
 <div class="save-shell">
-  <header class="save-top"><a class="brand" href="#new-league"><span class="brand-icon">M<span>↗</span></span><span>MANAGER<span class="brand-light">ONLINE</span></span></a><nav aria-label="Ligas"><a href="#leagues">Minhas ligas</a> · <a href="#login">Conta</a></nav></header>
+  <header class="save-top"><a class="brand" href="#new-league"><span class="brand-icon">M<span>↗</span></span><span>MANAGER<span class="brand-light">ONLINE</span></span></a><nav aria-label="Ligas"><a href="#leagues">Minhas ligas</a> · <app-logout-button/></nav></header>
   <div class="save-heading"><div><span class="step">PRÉ-TEMPORADA / {{ joined() ? 'ENTRAR NA LIGA' : 'NOVA LIGA' }}</span><h1>Sua história começa<br>na <em>escolha.</em></h1><p>Uma liga com um ou mais treinadores. Cada participante comanda seu clube.</p></div><div class="mode-switch"><button type="button" [class.active]="!joined()" (click)="navigate('new-league')">Criar liga</button><button type="button" [class.active]="joined()" (click)="navigate('join')">Tenho um código</button></div></div>
   <app-league-retention-notice />
   <div class="setup-grid">

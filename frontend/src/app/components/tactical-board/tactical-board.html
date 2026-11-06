@@ -1,2 +1,5 @@
-<app-positioning-board [players]="starters()" [formation]="formation()" [plan]="plan()" [locked]="locked()" (planChange)="planChange.emit($event)" (selected)="selectShirt($event)"/>
-<div class="slot-editor"><label for="slot-player">{{ roleList()[active()] }} · Vaga {{ active()+1 }}</label><select id="slot-player" [disabled]="locked()" [value]="lineup()[active()]" (change)="change.emit({index:active(),playerId:+$any($event.target).value})"><option value="" disabled>Escolha um jogador</option>@for (player of options(); track player.id) { <option [value]="player.id" [disabled]="used(player.id)||!available(player)">{{ player.name }} · {{ preferredPositions(player).join("/") }} · Base {{player.ability}} / Em campo {{playingAbility(player,roleList()[active()])}}{{ !available(player)?' (indisponível)':used(player.id)?' (titular)':'' }}</option> }</select><small>Qualquer atleta pode ocupar a vaga. Improvisações reduzem a habilidade em campo; os atributos de base são preservados. Posições sem fonte específica são estimadas pelos atributos.</small></div>
+<div class="lineup-workspace">
+<app-positioning-board [players]="starters()" [formation]="formation()" [plan]="plan()" [locked]="locked()" (planChange)="planChange.emit($event)" (selected)="selectShirt($event)" (swapped)="exchangePlayers($event)"/>
+<app-player-exchange [benchOnly]="true" [field]="starters()" [bench]="reserves()" [locked]="locked()" (exchanged)="exchangePlayers($event)"/>
+
+</div>

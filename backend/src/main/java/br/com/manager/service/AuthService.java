@@ -4,6 +4,9 @@ import br.com.manager.exception.DefaultErrorException;
 import br.com.manager.models.dto.ManagerDto;
 import br.com.manager.models.responses.SessionResponse;
 import br.com.manager.repository.ManagerRepository;
+import br.com.manager.repository.SaveRepository;
+import br.com.manager.models.events.SessionRevokedEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import br.com.manager.utils.PasswordHashing;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
@@ -18,10 +21,27 @@ public class AuthService {
 
     private final ManagerRepository repository;
     private final ManagerPhotoService photos;
+    private final SaveRepository leagues;
+    private final ApplicationEventPublisher events;
 
-    public AuthService(ManagerRepository repository, ManagerPhotoService photos) {
+    public AuthService(ManagerRepository repository, ManagerPhotoService photos, SaveRepository leagues, ApplicationEventPublisher events) {
         this.repository = repository;
         this.photos = photos;
+        this.leagues=leagues;
+        this.events=events;
+    }
+
+    @Transactional
+    public void logout(String header) {
+        if(header==null||!header.startsWith("Bearer "))return;
+        String token=header.substring(7);
+        var manager=find(token);
+        var revoked=new HashSet<String>();
+        if(manager!=null)revoked.addAll(leagues.revokeAccountLeagueTokens(manager.id()));
+        String tokenHash=hash(token);
+        repository.revokeSession(tokenHash);
+        revoked.add(tokenHash);
+        events.publishEvent(new SessionRevokedEvent(Set.copyOf(revoked)));
     }
 
     @Transactional
@@ -61,7 +81,7 @@ public class AuthService {
         return repository.findSession(hash(token), Instant.now()).orElse(null);
     }
 
-    private String hash(String token) {
+    public static String hash(String token) {
         try {
             return HexFormat.of().formatHex(
                 MessageDigest.getInstance("SHA-256").digest(token.getBytes(StandardCharsets.UTF_8))

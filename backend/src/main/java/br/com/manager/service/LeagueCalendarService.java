@@ -35,7 +35,7 @@ public class LeagueCalendarService {
         this.tournaments = tournaments;
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public br.com.manager.models.responses.SeasonCalendarResponse season(String id, String token) {
         var week = week(id, token);
         var member = saves.realtimeMember(id, token.substring(7));
@@ -89,13 +89,12 @@ public class LeagueCalendarService {
         );
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public LeagueCalendarResponse week(String id, String token) {
-        var room = saves.authorizedRoom(id, token);
+        var room = saves.summary(id, token);
         var member = saves.realtimeMember(id, token.substring(7));
         var start = calendar.start(id);
         var date = start.plusDays(Math.max(0, fixtures.teamDay(id, member.teamId()) - 1L));
-        seasons.ensureForDate(id, date);
         var monday = date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         var sunday = monday.plusDays(6);
         var events = new ArrayList<>(calendar.events(id, member.teamId(), monday, sunday));

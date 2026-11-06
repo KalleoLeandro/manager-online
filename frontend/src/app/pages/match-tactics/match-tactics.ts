@@ -1,3 +1,5 @@
+import {HalfTimeTalk} from '../../components/half-time-talk/half-time-talk';
+import {matchIsHalfTime} from '../../utils/match-clock';
 import { Component, DestroyRef, computed, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { auditTime, finalize, interval, Subject } from 'rxjs';
@@ -12,13 +14,14 @@ import { LocalPlayers } from '../../components/local-players/local-players';
 import { currentPath } from '../../utils/navigation';
 import { matchClock } from '../../utils/match-clock';
 
-@Component({selector:'app-match-tactics',providers:[SaveRealtimeService],imports:[MatchCoachControls,ClubCrest,GameIcon,LiveStatus,LocalPlayers],templateUrl:'./match-tactics.html',styleUrl:'./match-tactics.css'})
+@Component({selector:'app-match-tactics',providers:[SaveRealtimeService],imports:[HalfTimeTalk,MatchCoachControls,ClubCrest,GameIcon,LiveStatus,LocalPlayers],templateUrl:'./match-tactics.html',styleUrl:'./match-tactics.css'})
 export class MatchTacticsPage implements OnInit {
  private readonly api=inject(MatchdayService);private readonly saves=inject(SaveService);private readonly destroy=inject(DestroyRef);
  readonly realtime=inject(SaveRealtimeService);readonly id=currentPath().split('/')[1]||'';
  private readonly fixture=Number(currentPath().split('/')[2])||undefined;
  readonly data=signal<Matchday|null>(null);readonly busy=signal(false);readonly loading=signal(true);readonly opened=signal(false);readonly error=signal('');readonly notice=signal('');readonly clock=matchClock;
  readonly match=computed(()=>this.data()?.selected);readonly own=computed(()=>{const m=this.match(),id=this.data()?.ownTeamId;if(!m)return null;return m.home.id===id?m.home:m.away.id===id?m.away:null;});
+ readonly halfTime=computed(()=>this.match()?.halfTimeBreak||matchIsHalfTime(this.match()));
  readonly editable=computed(()=>this.opened()&&this.match()?.status==='PAUSED'&&!!this.match()?.canResume);
  private refreshes=new Subject<void>();private fetching=false;private again=false;
  ngOnInit():void{const access=this.saves.access(this.id);if(!access){this.error.set('Entre nesta liga para ajustar seu time.');this.loading.set(false);return;}this.realtime.connect({saveId:this.id,accessToken:access.accessToken,activity:'MANAGING_TEAM'});this.refreshes.pipe(auditTime(150),takeUntilDestroyed(this.destroy)).subscribe(()=>this.load());this.realtime.gameEvents$.pipe(takeUntilDestroyed(this.destroy)).subscribe(e=>{if(e.event==='MATCH_UPDATED')this.refreshes.next();});interval(5000).pipe(takeUntilDestroyed(this.destroy)).subscribe(()=>this.refreshes.next());this.load();}

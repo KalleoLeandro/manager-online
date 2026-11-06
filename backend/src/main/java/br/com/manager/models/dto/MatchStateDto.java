@@ -93,6 +93,10 @@ public class MatchStateDto {
             morale = 100,
             sharpness = 100;
         public int yellow, minutes, goals, assists, passesCompleted, passesMissed, shots, saves, injuryDays;
+        public int tackles, interceptions, blockedShots, fouls, shotsOnTarget, goalsAgainst;
+        public Double rating;
+        public int lastTalkPeriod, talkMoraleDelta, talkSharpnessDelta;
+        public String halfTimeTalk, talkReaction;
         public boolean onPitch, entered, withdrawn, sentOff, injured;
         public Map<String, Integer> attributes = new LinkedHashMap<>();
     }

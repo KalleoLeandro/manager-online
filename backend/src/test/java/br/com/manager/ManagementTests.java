@@ -129,6 +129,7 @@ class ManagementTests {
             .isInstanceOf(DefaultErrorException.class)
             .extracting(error -> ((DefaultErrorException) error).getStatusCode().value())
             .isEqualTo(409);
+        db.update("UPDATE game_saves SET capacity=2 WHERE id=?",id);
         saves.ready(id, token, true);
         assertThatThrownBy(() ->
             management.update(id, token, new UpdateTeamRequest(state.formation(), state.mentality(), state.lineup(), 1))

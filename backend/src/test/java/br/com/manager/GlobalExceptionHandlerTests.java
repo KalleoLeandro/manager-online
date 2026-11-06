@@ -47,6 +47,48 @@ class GlobalExceptionHandlerTests {
     }
 
     @Test
+    void databaseTimeoutReturnsGatewayTimeoutWithoutSqlDetails() throws Exception {
+        when(registration.register(any())).thenThrow(
+            new org.springframework.dao.QueryTimeoutException("SELECT private-secret")
+        );
+        http.perform(post("/api/registrations").contentType(MediaType.APPLICATION_JSON).content(VALID))
+            .andExpect(status().isGatewayTimeout())
+            .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("foi cancelada")))
+            .andExpect(
+                content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("private-secret")))
+            );
+    }
+
+    @Test
+    void lockTimeoutReturnsServiceUnavailableWithRetryHint() throws Exception {
+        when(registration.register(any())).thenThrow(
+            new org.springframework.dao.CannotAcquireLockException("private-secret")
+        );
+        http.perform(post("/api/registrations").contentType(MediaType.APPLICATION_JSON).content(VALID))
+            .andExpect(status().isServiceUnavailable())
+            .andExpect(header().string("Retry-After", "3"))
+            .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("ocupado")));
+    }
+
+    @Test
+    void postgresCancellationStatesAreHandledEvenWhenJdbcDoesNotTranslateThem() throws Exception {
+        for (var state : new String[] { "55P03", "57014" }) {
+            doThrow(
+                new org.springframework.jdbc.UncategorizedSQLException(
+                    "query",
+                    "private-secret",
+                    new java.sql.SQLException("private-secret", state)
+                )
+            ).when(registration).register(any());
+            http.perform(post("/api/registrations").contentType(MediaType.APPLICATION_JSON).content(VALID))
+                .andExpect(status().is(state.equals("55P03") ? 503 : 504))
+                .andExpect(
+                    content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("private-secret")))
+                );
+        }
+    }
+
+    @Test
     void unexpectedErrorDoesNotExposeInternalDetails() throws Exception {
         when(registration.register(any())).thenThrow(new IllegalStateException("SQL password=private-secret"));
         http.perform(post("/api/registrations").contentType(MediaType.APPLICATION_JSON).content(VALID))

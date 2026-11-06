@@ -203,6 +203,7 @@ public final class MatchEngine {
                     attack.stats.passesMissed++;
                     carrier.passesMissed++;
                     defend.stats.interceptions++;
+                    marker.interceptions++;
                     possessionLost = true;
                     break;
                 }
@@ -292,7 +293,7 @@ public final class MatchEngine {
                     chance = clamp(.043 * Math.exp((creation - prevention) / 160) * posture * exposure, .014, .09);
                 }
                 if (r.nextDouble() < chance) shot(m, attack, defend, r, false, false, carrier);
-                else if (r.nextDouble() < .09) defend.stats.tackles++;
+                else if (r.nextDouble() < .09) {defend.stats.tackles++;marker.tackles++;}
             }
         }
         aiChanges(m, m.home, r);
@@ -337,6 +338,7 @@ public final class MatchEngine {
             ) m.periodEndPending = true;
             else completePeriod(m);
         }
+        PlayerMatchRatings.refresh(m);
         m.revision++;
     }
 
@@ -434,6 +436,7 @@ public final class MatchEngine {
 
     private static void foul(MatchStateDto m, Team attack, Team defend, Player carrier, Player marker, Random r) {
         defend.stats.fouls++;
+        marker.fouls++;
         event(
             m,
             "FOUL",
@@ -574,6 +577,7 @@ public final class MatchEngine {
         boolean onTarget = r.nextDouble() < clamp(.36 + (precision - 60) * .004, .20, .65);
         if (onTarget) {
             attack.stats.shotsOnTarget++;
+            shooter.shotsOnTarget++;
             if (r.nextDouble() < Math.min(.85, xg / clamp(.36 + (precision - 60) * .004, .20, .65))) goal(
                 m,
                 attack,
@@ -601,6 +605,7 @@ public final class MatchEngine {
             }
         } else if (r.nextDouble() < .35 && !corner) {
             defend.stats.blockedShots++;
+            var blockers=active(defend);if(!blockers.isEmpty())blockers.get(Math.floorMod(m.minute+shooter.id,blockers.size())).blockedShots++;
             event(
                 m,
                 "BLOCKED_SHOT",
@@ -706,6 +711,7 @@ public final class MatchEngine {
 
     private static void goal(MatchStateDto m, Team team, Player scorer, Player assist, double xg, boolean penalty) {
         team.goals++;
+        active(team==m.home?m.away:m.home).forEach(p->p.goalsAgainst++);
         scorer.goals++;
         if (assist != null && assist.id == scorer.id) assist = null;
         if (assist != null) assist.assists++;

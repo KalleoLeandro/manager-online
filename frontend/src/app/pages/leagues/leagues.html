@@ -1,6 +1,6 @@
 <div class="leagues-shell">
-  <header><a class="brand" href="#leagues"><span class="brand-icon">M↗</span><span>MANAGER<span class="brand-light">ONLINE</span></span></a><nav aria-label="Ligas"><a href="#new-league">Nova liga ↗</a><a href="#join">Entrar com código</a><a href="#login">Conta</a></nav></header>
-  <main><div class="page-intro"><div><span class="eyeline">SEU FUTEBOL, SUAS HISTÓRIAS</span><h1>Minhas ligas</h1><p>Retome uma liga solo ou reúna seus amigos para a próxima rodada.</p></div><button class="refresh" type="button" [disabled]="loading()" (click)="load()">Atualizar lista</button></div>
+  <header class="leagues-header"><a class="brand" href="#leagues"><span class="brand-icon">M↗</span><span>MANAGER<span class="brand-light">ONLINE</span></span></a><nav class="league-navigation" aria-label="Ligas"><a href="#new-league">Nova liga ↗</a><a href="#join">Entrar com código</a><app-logout-button/></nav></header>
+  <main class="leagues-content"><div class="page-intro"><div><span class="eyeline">SEU FUTEBOL, SUAS HISTÓRIAS</span><h1>Minhas ligas</h1><p>Retome uma liga solo ou reúna seus amigos para a próxima rodada.</p></div><div class="intro-actions"><span class="league-count">{{leagues().length}} {{leagues().length===1?'liga':'ligas'}}</span><button class="refresh" type="button" [disabled]="loading()" (click)="load()">Atualizar lista</button></div></div>
     @if(!account){<p class="guest-note">Estas são as ligas deste navegador. <a href="#login">Entre na sua conta</a> para acessar suas ligas em outros dispositivos.</p>}
     <app-league-retention-notice />
     @if(error()){<p role="alert" class="error">{{error()}}</p>}@if(notice()){<p role="status" class="notice">{{notice()}}</p>}

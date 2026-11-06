@@ -141,6 +141,7 @@ class DayProgressTests {
         var initial = progress.state(id, token(a));
         fixture(a, initial.currentDate().plusDays(2));
         assertThatThrownBy(() -> progress.state(id, null)).isInstanceOf(DefaultErrorException.class);
+        db.update("UPDATE game_saves SET capacity=2 WHERE id=?",id);
         db.update("UPDATE save_members SET ready=TRUE WHERE save_id=?", id);
         assertThatThrownBy(() ->
             progress.advance(id, token(a), new AdvanceDaysRequest(initial.currentDate(), 1))

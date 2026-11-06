@@ -12,7 +12,17 @@ export function preferredPositions(p:PositionedPlayer):string[]{
 }
 export function positionFit(p:PositionedPlayer,assigned:string):number{
  const natural=p.naturalPosition||p.position,preferred=preferredPositions(p);if(preferred.includes(assigned))return 1;
- if(natural==='GOL'||assigned==='GOL')return .18;if(positionFamily(assigned)===natural)return .72;
+ const naturalFamily=positionFamily(natural),assignedFamily=positionFamily(assigned);
+ if(naturalFamily==='GOL'||assignedFamily==='GOL')return .18;
+ if(naturalFamily==='DEF'&&assignedFamily==='DEF'){
+  if([['LE','ALE'],['LD','ALD']].some(side=>side.includes(assigned)&&preferred.some(r=>side.includes(r))))return .96;
+  return .90;
+ }
+ if(naturalFamily==='ATA'&&assignedFamily==='ATA'){
+  if([['PE','PD'],['CA','SA']].some(group=>group.includes(assigned)&&preferred.some(r=>group.includes(r))))return .96;
+  return .90;
+ }
+ if(assignedFamily===naturalFamily)return .72;
  if([['ME','PE','ALE','LE'],['MD','PD','ALD','LD']].some(side=>side.includes(assigned)&&preferred.some(r=>side.includes(r))))return .75;
  return .42;
 }

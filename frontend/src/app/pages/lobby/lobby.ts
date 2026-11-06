@@ -1,3 +1,4 @@
+import {LeagueExit} from '../../components/league-exit/league-exit';
 import { LocalPlayers } from '../../components/local-players/local-players';
 import { Component, DestroyRef, computed, effect, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -11,9 +12,8 @@ import { SavePresence } from '../../components/save-presence/save-presence';
 import { LeagueRetentionNotice } from '../../components/league-retention-notice/league-retention-notice';
 import { currentPath } from '../../utils/navigation';
 
-@Component({ selector: 'app-lobby', providers: [SaveRealtimeService], imports:[LocalPlayers,ClubCrest, LiveStatus, SavePresence,LeagueRetentionNotice], templateUrl: './lobby.html', styleUrl: './lobby.css' })
+@Component({ selector: 'app-lobby', providers: [SaveRealtimeService], imports:[LeagueExit,LocalPlayers,ClubCrest, LiveStatus, SavePresence,LeagueRetentionNotice], templateUrl: './lobby.html', styleUrl: './lobby.css' })
 export class Lobby implements OnInit {
-  constructor(){effect(()=>{if(this.realtime.room()?.status==='LIVE')location.hash=`match/${this.id}`;});}
   private readonly api = inject(SaveService);
   private readonly destroy = inject(DestroyRef);
   readonly id = currentPath().split('/')[1] || '';
@@ -33,7 +33,7 @@ export class Lobby implements OnInit {
     this.realtime.connect({ saveId: this.id, accessToken: this.access.accessToken, activity: 'LOBBY' });
   }
   ready(): void {
-    if (this.loading()) return;
+    if (this.loading()||(this.room()?.capacity||1)===1||this.room()?.localMultiplayer) return;
     this.loading.set(true);
     this.api.ready(this.id,!this.me()?.ready).pipe(finalize(() => this.loading.set(false)),takeUntilDestroyed(this.destroy)).subscribe({ error: e => this.error.set(e.error?.message || 'Não foi possível alterar sua confirmação.') });
   }

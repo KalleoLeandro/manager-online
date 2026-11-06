@@ -54,7 +54,7 @@ public class MatchRepository {
 
     public List<String> candidates() {
         return db.query(
-            "SELECT id FROM game_saves WHERE status='LIVE' OR status='READY' AND matchday_pending=TRUE ORDER BY id",
+            "SELECT id FROM game_saves WHERE status='LIVE' ORDER BY id",
             new MapSqlParameterSource(),
             (r, n) -> r.getString("id")
         );
@@ -92,6 +92,24 @@ public class MatchRepository {
             params(id),
             (r, n) -> r.getLong(1)
         );
+    }
+
+    public Optional<MatchTicketDto> nextTicket(String id, long team) {
+        return db.query("""
+            SELECT f.id,f.match_date,ns.competition_name,f.home_team_id,h.name AS home_name,
+                f.away_team_id,a.name AS away_name,
+                COALESCE(hp.primary_color,'#334155') AS home_color,COALESCE(hp.secondary_color,'#ffffff') AS home_secondary,
+                COALESCE(ap.primary_color,'#334155') AS away_color,COALESCE(ap.secondary_color,'#ffffff') AS away_secondary
+            FROM national_fixtures f JOIN national_seasons ns ON ns.id=f.season_id
+            JOIN save_teams h ON h.save_id=f.save_id AND h.team_id=f.home_team_id
+            JOIN save_teams a ON a.save_id=f.save_id AND a.team_id=f.away_team_id
+            LEFT JOIN catalog_team_palettes hp ON hp.team_id=f.home_team_id
+            LEFT JOIN catalog_team_palettes ap ON ap.team_id=f.away_team_id
+            WHERE f.save_id=:id AND f.status='SCHEDULED' AND (f.home_team_id=:team OR f.away_team_id=:team)
+            ORDER BY f.match_date,f.id LIMIT 1
+            """,params(id).addValue("team",team),(r,n)->new MatchTicketDto(r.getLong("id"),r.getObject("match_date",LocalDate.class),
+                r.getString("competition_name"),r.getLong("home_team_id"),r.getString("home_name"),r.getString("home_color"),r.getString("home_secondary"),
+                r.getLong("away_team_id"),r.getString("away_name"),r.getString("away_color"),r.getString("away_secondary"))).stream().findFirst();
     }
 
     public Optional<LocalDate> nextHumanDate(String id) {
@@ -302,6 +320,7 @@ public class MatchRepository {
     }
 
     public void finish(String id, MatchStateDto s, int round) {
+        br.com.manager.utils.PlayerMatchRatings.refresh(s);
         db.update(
             "UPDATE national_fixtures SET status='PLAYED',home_goals=:h,away_goals=:a WHERE save_id=:id AND id=:fixture AND status='SCHEDULED'",
             params(id).addValue("fixture", s.fixtureId).addValue("h", s.home.goals).addValue("a", s.away.goals)
@@ -326,7 +345,10 @@ public class MatchRepository {
                 params(id).addValue("team", team.id).addValue("season", s.seasonId)
             );
             for (var p : team.players) {
-                if (!p.entered) continue;
+                if (!p.entered) {
+                    if(p.talkMoraleDelta!=0||p.talkSharpnessDelta!=0)db.update("UPDATE save_player_profiles SET morale=LEAST(100,GREATEST(1,morale+:morale)),sharpness=LEAST(100,GREATEST(1,sharpness+:sharpness)) WHERE save_id=:id AND player_id=:player",params(id).addValue("player",p.id).addValue("morale",p.talkMoraleDelta).addValue("sharpness",p.talkSharpnessDelta));
+                    continue;
+                }
                 var parameters = params(id)
                     .addValue("season", s.disciplineSeasonId > 0 ? s.disciplineSeasonId : s.seasonId)
                     .addValue("player", p.id);
@@ -347,12 +369,15 @@ public class MatchRepository {
                     .addValue("saves", p.saves)
                     .addValue("yellow", p.yellow)
                     .addValue("red", p.sentOff ? 1 : 0)
-                    .addValue("threshold", s.suspensionThreshold);
+                    .addValue("threshold", s.suspensionThreshold)
+                    .addValue("rating",p.rating==null?0:p.rating).addValue("rated",p.rating==null?0:1)
+                    .addValue("fixture",s.fixtureId).addValue("ratingNullable",p.rating,java.sql.Types.DECIMAL);
+                db.update("INSERT INTO match_player_ratings(save_id,fixture_id,player_id,minutes,rating) SELECT :id,:fixture,:player,:minutes,:ratingNullable WHERE NOT EXISTS(SELECT 1 FROM match_player_ratings WHERE save_id=:id AND fixture_id=:fixture AND player_id=:player)",parameters);
                 db.update(
                     """
                     UPDATE match_player_seasons SET appearances=appearances+1,minutes=minutes+:minutes,goals=goals+:goals,assists=assists+:assists,
                     passes_completed=passes_completed+:completed,passes_missed=passes_missed+:missed,shots=shots+:shots,saves=saves+:saves,
-                    yellow_cards=yellow_cards+:yellow,red_cards=red_cards+:red,
+                    yellow_cards=yellow_cards+:yellow,red_cards=red_cards+:red,rating_total=rating_total+:rating,rated_appearances=rated_appearances+:rated,
                     suspension_remaining=GREATEST(suspension_remaining,CASE WHEN :red=1 OR yellow_count+:yellow>=:threshold THEN 1 ELSE 0 END),
                     yellow_count=CASE WHEN :red=1 OR yellow_count+:yellow>=:threshold THEN 0 ELSE yellow_count+:yellow END
                     WHERE save_id=:id AND season_id=:season AND player_id=:player
@@ -364,8 +389,8 @@ public class MatchRepository {
                     parameters.addValue("fitness", p.fitness)
                 );
                 db.update(
-                    "UPDATE save_player_profiles SET morale=LEAST(100,GREATEST(1,morale+:morale)) WHERE save_id=:id AND player_id=:player",
-                    parameters.addValue("morale", points == 3 ? 3 : points == 0 ? -3 : 0)
+                    "UPDATE save_player_profiles SET morale=LEAST(100,GREATEST(1,morale+:morale)),sharpness=LEAST(100,GREATEST(1,sharpness+:talkSharpness)) WHERE save_id=:id AND player_id=:player",
+                    parameters.addValue("morale", (points == 3 ? 3 : points == 0 ? -3 : 0)+p.talkMoraleDelta).addValue("talkSharpness",p.talkSharpnessDelta)
                 );
                 if (p.injured) db.update(
                     "UPDATE save_player_profiles SET injury_name=:injury,return_round=:returnRound WHERE save_id=:id AND player_id=:player",

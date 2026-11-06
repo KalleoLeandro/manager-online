@@ -1,15 +1,15 @@
 <section class="referee-card" aria-label="Arbitragem e área técnica">
  <div class="referee-heading"><span class="whistle"><app-game-icon name="whistle"/></span><div><small>ÁREA TÉCNICA</small><h2>Relação com o árbitro</h2></div><span class="discipline" [class.sent-off]="state()?.dismissed">{{state()?.dismissed?'EXPULSO':state()?.warnings?'ADVERTIDO':'EM CAMPO'}}</span></div>
  @if(team();as t){
-  <div class="meter-label"><span>{{t.name}}</span><b>{{state()?.refereeConfidence??100}} / 100</b></div>
-  <div class="tolerance" role="meter" aria-label="Confiança do árbitro na área técnica" aria-valuemin="0" aria-valuemax="100" [attr.aria-valuenow]="state()?.refereeConfidence??100"><span [style.width.%]="state()?.refereeConfidence??100" [class.low]="(state()?.refereeConfidence??100)<=45"></span></div>
+  <div class="meter-label"><span>{{t.name}}</span></div>
+  <div class="tolerance" role="meter" aria-label="Confiança do árbitro na área técnica" [attr.aria-valuetext]="relationshipLabel()" aria-valuemin="0" aria-valuemax="100" [attr.aria-valuenow]="state()?.refereeConfidence??100"><span [style.width.%]="state()?.refereeConfidence??100" [class.low]="(state()?.refereeConfidence??100)<=45"></span></div>
   <p class="referee-message" role="status">“{{state()?.refereeMessage||'Sem problemas com a área técnica.'}}”</p>
   <small>A confiança se recupera com o tempo de jogo sem novas reclamações ou trocas antecipadas. Uma expulsão vale até o fim da partida.</small>
  }@else{<p>Selecione sua partida para comandar a equipe.</p>}
 </section>
 @if(team()){
- <section class="touchline-commands" aria-label="Comandos do treinador"><header><h2>À beira do campo</h2><small>{{state()?.dismissed?'Auxiliar responsável pelos ajustes':cooldown()?'Nova instrução em '+cooldown()+' min de jogo':'Uma instrução a cada 3 min de jogo'}}</small></header>
+ <section class="touchline-commands" aria-label="Comandos do treinador"><header><h2>À beira do campo</h2><small>{{state()?.dismissed?'Auxiliar responsável pelos ajustes':cooldown()?'Aguarde para dar outra instrução':'Oriente sua equipe'}}</small></header>
   <div class="command-buttons">@for(c of commands;track c.type){<button type="button" [class.complaint]="c.type==='COMPLAIN'" [class.active]="state()?.command===c.type" [disabled]="blocked()" [title]="c.hint" (click)="commanded.emit(c.type)"><app-game-icon [name]="c.icon"/><span>{{c.label}}</span><small>{{c.hint}}</small></button>}</div>
-  @if(activeLabel()&&remaining()>0){<p class="active-effect" role="status">{{activeLabel()}} · {{remaining()}} min de efeito restantes. Trocar ou renovar agora substitui o efeito e custa 8 pontos na relação com o árbitro (reclamar custa 30).</p>}
+  @if(activeLabel()&&remaining()>0){<p class="active-effect" role="status">{{activeLabel()}} em andamento. Trocar ou renovar a instrução substitui o efeito e pode irritar o árbitro.</p>}
  </section>
 }

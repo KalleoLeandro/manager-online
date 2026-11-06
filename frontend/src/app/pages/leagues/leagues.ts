@@ -1,3 +1,4 @@
+import {LogoutButton} from '../../components/logout-button/logout-button';
 import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { finalize } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -8,7 +9,7 @@ import { LeagueDeleteConfirmation } from '../../components/league-delete-confirm
 import { LeagueRetentionNotice } from '../../components/league-retention-notice/league-retention-notice';
 import { navigate } from '../../utils/navigation';
 
-@Component({selector:'app-leagues',imports:[LeagueCard,LeagueDeleteConfirmation,LeagueRetentionNotice],templateUrl:'./leagues.html',styleUrl:'./leagues.css'})
+@Component({selector:'app-leagues',imports:[LogoutButton,LeagueCard,LeagueDeleteConfirmation,LeagueRetentionNotice],templateUrl:'./leagues.html',styleUrl:'./leagues.css'})
 export class LeaguesPage implements OnInit {
   private readonly api=inject(SaveService);private readonly destroy=inject(DestroyRef);
   readonly account=inject(AuthService).session();

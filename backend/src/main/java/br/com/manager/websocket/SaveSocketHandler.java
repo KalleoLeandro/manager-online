@@ -5,6 +5,8 @@ import br.com.manager.models.events.LeagueDeletedEvent;
 import br.com.manager.models.events.SaveChangedEvent;
 import br.com.manager.models.events.TeamUpdatedEvent;
 import br.com.manager.models.events.MatchUpdatedEvent;
+import br.com.manager.models.events.SessionRevokedEvent;
+import br.com.manager.service.AuthService;
 import br.com.manager.models.responses.LeagueRoomResponse;
 import br.com.manager.models.responses.RealtimeSnapshotResponse;
 import br.com.manager.service.SaveService;
@@ -38,6 +40,7 @@ public class SaveSocketHandler extends TextWebSocketHandler {
         volatile long lastSeen = System.currentTimeMillis();
         Long teamId;
         String saveId,
+            tokenHash,
             memberId,
             name = "Convidado",
             activity = "SELECTING_TEAM";
@@ -105,6 +108,7 @@ public class SaveSocketHandler extends TextWebSocketHandler {
         LeagueRoomResponse room;
         var token = text(input, "accessToken");
         if (token != null && !token.isBlank()) {
+            client.tokenHash=AuthService.hash(token);
             var id = text(input, "saveId");
             var member = saves.realtimeMember(id, token);
             var renew = input.get("renewActivity");
@@ -316,6 +320,13 @@ public class SaveSocketHandler extends TextWebSocketHandler {
         synchronized (channel) {
             channel.clients.remove(session.getId());
             if (!channel.clients.isEmpty()) broadcast(channel);
+        }
+    }
+
+    @TransactionalEventListener(phase=TransactionPhase.AFTER_COMMIT)
+    public void onSessionRevoked(SessionRevokedEvent event) {
+        for(var client:clients.values())if(client.tokenHash!=null&&event.tokenHashes().contains(client.tokenHash)){
+            try{client.socket.close(CloseStatus.POLICY_VIOLATION);}catch(IOException ignored){}
         }
     }
 

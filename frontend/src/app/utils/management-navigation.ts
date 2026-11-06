@@ -97,6 +97,7 @@ export const managementNavigation: ManagementMenu[] = [
         "id": "overview",
         "name": "Time principal"
       },
+      {"id":"roster","name":"Elenco profissional"},
       {
         "id": "juniors",
         "name": "Juniores"

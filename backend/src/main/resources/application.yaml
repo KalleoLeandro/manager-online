@@ -17,6 +17,15 @@ spring:
     username: "${DATABASE_USER:${POSTGRES_USER:manager}}"
     password: "${DATABASE_PASSWORD:${POSTGRES_PASSWORD:}}"
     driver-class-name: org.postgresql.Driver
+    hikari:
+      connection-timeout: 5000
+      validation-timeout: 2000
+      connection-init-sql: "SET statement_timeout = '15s'; SET lock_timeout = '3s'; SET idle_in_transaction_session_timeout = '45s'"
+  jdbc:
+    template:
+      query-timeout: 15s
+  transaction:
+    default-timeout: 30s
   sql:
     init:
       mode: always

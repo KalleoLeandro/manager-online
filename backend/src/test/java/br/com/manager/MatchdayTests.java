@@ -28,7 +28,7 @@ class MatchdayTests {
         var a = create(1);
         var id = a.room().id();
         ready(a);
-        matches.start(id, header(a));
+        startOnMatchDay(id, header(a));
         var state = own(a);
         matches.action(
             id,
@@ -75,7 +75,7 @@ class MatchdayTests {
         var a = create(1);
         var id = a.room().id();
         ready(a);
-        matches.start(id, header(a));
+        startOnMatchDay(id, header(a));
         var state = own(a);
         var team = state.home().human ? state.home() : state.away();
         var defender = team.players
@@ -130,7 +130,7 @@ class MatchdayTests {
         var a = create(1);
         var id = a.room().id();
         ready(a);
-        matches.start(id, header(a));
+        startOnMatchDay(id, header(a));
         var state = own(a);
         assertThat(repository.session(id, state.fixtureId()).orElseThrow().state().engineVersion).isEqualTo(
             br.com.manager.utils.MatchEngine.CURRENT_VERSION
@@ -182,7 +182,7 @@ class MatchdayTests {
         var b = saves.join(a.room().inviteCode(), new JoinLeagueRequest("Outro técnico", home == teamId ? away : home));
         ready(a);
         ready(b);
-        matches.start(id, header(a));
+        startOnMatchDay(id, header(a));
         matches.action(
             id,
             own(a).fixtureId(),
@@ -220,7 +220,7 @@ class MatchdayTests {
         var a = create(1);
         var id = a.room().id();
         ready(a);
-        matches.start(id, header(a));
+        startOnMatchDay(id, header(a));
         var other = repository
             .currentDay(id)
             .stream()
@@ -257,7 +257,7 @@ class MatchdayTests {
         assertThat(matches.view(id, header(a), null).canChangeSpeed()).isTrue();
         assertThat(matches.speed(id, header(a), 400, null).speedPercent()).isEqualTo(400);
         ready(a);
-        matches.start(id, header(a));
+        startOnMatchDay(id, header(a));
         var row = repository.session(id, own(a).fixtureId()).orElseThrow();
         assertThat(row.nextTick()).isEqualTo(now.get().plusMillis(375));
         var state = row.state();
@@ -302,7 +302,7 @@ class MatchdayTests {
         assertThat(matches.view(id, header(b), null).speedPercent()).isEqualTo(200);
         ready(a);
         ready(b);
-        matches.start(id, header(a));
+        startOnMatchDay(id, header(a));
         assertThat(repository.currentDay(id)).allMatch(row -> row.nextTick().equals(now.get().plusMillis(750)));
         matches.speed(id, header(a), 400, null);
         assertThat(repository.currentDay(id)).allMatch(row -> row.nextTick().equals(now.get().plusMillis(375)));
@@ -332,7 +332,7 @@ class MatchdayTests {
         var a = create(1);
         var id = a.room().id();
         ready(a);
-        matches.start(id, header(a));
+        startOnMatchDay(id, header(a));
         var row = repository.session(id, own(a).fixtureId()).orElseThrow();
         var state = VarRulesTests.reviewed(confirmed, false);
         state.fixtureId = row.state().fixtureId;
@@ -418,7 +418,7 @@ class MatchdayTests {
         var a = create(1);
         var id = a.room().id();
         ready(a);
-        matches.start(id, header(a));
+        startOnMatchDay(id, header(a));
         var state = repository.session(id, own(a).fixtureId()).orElseThrow().state();
         var human = state.home.human ? state.home : state.away;
         human.substitutionWindows = 3;
@@ -487,7 +487,7 @@ class MatchdayTests {
         );
         ready(a);
         ready(b);
-        matches.start(id, header(a));
+        startOnMatchDay(id, header(a));
         var state = repository.session(id, own(a).fixtureId()).orElseThrow().state();
         state.minute = 44;
         state.period = 1;
@@ -512,7 +512,7 @@ class MatchdayTests {
         var a = create(1);
         var id = a.room().id();
         ready(a);
-        matches.start(id, header(a));
+        startOnMatchDay(id, header(a));
         var state = repository.session(id, own(a).fixtureId()).orElseThrow().state();
         long teamId = state.home.human ? state.home.id : state.away.id;
         var mapper = tools.jackson.databind.json.JsonMapper.builder().build();
@@ -577,7 +577,7 @@ class MatchdayTests {
         var a = create(1);
         var id = a.room().id();
         ready(a);
-        matches.start(id, header(a));
+        startOnMatchDay(id, header(a));
         var first = own(a);
         var state = repository.session(id, first.fixtureId()).orElseThrow().state();
         state.period = 2;
@@ -625,6 +625,46 @@ class MatchdayTests {
         ).isEqualTo("PLAYED");
     }
 
+    @Test
+    void halfTimeTalkAndPositionSwapAreAuthorizedAndRatingsArePersisted(){
+        var access=create(1);var id=access.room().id();ready(access);startOnMatchDay(id,header(access));
+        var view=own(access);var row=repository.session(id,view.fixtureId()).orElseThrow();var state=row.state();
+        var team=state.home.human?state.home:state.away;var opponent=team==state.home?state.away:state.home;
+        state.status="PAUSED";state.awaitingCoachDecision=true;state.halfTimeBreak=true;state.period=2;state.minute=45;state.pendingCoachTeams.clear();state.pendingCoachTeams.add(team.id);
+        var first=team.players.stream().filter(p2->p2.onPitch&&p2.slot>0).findFirst().orElseThrow();
+        var second=team.players.stream().filter(p2->p2.onPitch&&p2.slot>first.slot).findFirst().orElseThrow();
+        int a=first.slot,b=second.slot;first.minutes=45;first.morale=60;first.sharpness=60;first.goals=1;
+        repository.save(id,state,row.nextTick());
+        matches.action(id,state.fixtureId,header(access),new MatchActionRequest("TALK_ENCOURAGE",null,first.id,null,null,state.revision));
+        var updated=repository.session(id,state.fixtureId).orElseThrow().state();
+        long revision=updated.revision;assertThat((updated.home.human?updated.home:updated.away).players.stream().filter(p2->p2.id==first.id).findFirst().orElseThrow().lastTalkPeriod).isEqualTo(2);
+        assertThatThrownBy(()->matches.action(id,state.fixtureId,header(access),new MatchActionRequest("TALK_PRAISE",null,opponent.players.getFirst().id,null,null,revision))).isInstanceOf(DefaultErrorException.class);
+        matches.action(id,state.fixtureId,header(access),new MatchActionRequest("SWAP_POSITIONS",first.id,second.id,null,null,revision));
+        var swapped=repository.session(id,state.fixtureId).orElseThrow().state();var ownTeam=swapped.home.human?swapped.home:swapped.away;
+        assertThat(ownTeam.players.stream().filter(p2->p2.id==first.id).findFirst().orElseThrow().slot).isEqualTo(b);
+        assertThat(ownTeam.players.stream().filter(p2->p2.id==second.id).findFirst().orElseThrow().slot).isEqualTo(a);
+        var unused=ownTeam.players.stream().filter(p2->!p2.entered).findFirst().orElseThrow();
+        int oldMorale=db.queryForObject("SELECT morale FROM save_player_profiles WHERE save_id=? AND player_id=?",Integer.class,id,unused.id);
+        unused.talkMoraleDelta=-5;unused.talkSharpnessDelta=-3;
+        repository.finish(id,swapped,access.room().roundNumber());
+        assertThat(db.queryForObject("SELECT morale FROM save_player_profiles WHERE save_id=? AND player_id=?",Integer.class,id,unused.id)).isEqualTo(Math.max(1,oldMorale-5));
+        assertThat(db.queryForObject("SELECT rating FROM match_player_ratings WHERE save_id=? AND fixture_id=? AND player_id=?",Double.class,id,state.fixtureId,first.id)).isGreaterThan(6.0);
+        assertThat(db.queryForObject("SELECT rated_appearances FROM match_player_seasons WHERE save_id=? AND player_id=?",Integer.class,id,first.id)).isEqualTo(1);
+    }
+
+    @Test
+    void soloAndLocalMultiplayerStartWithoutReadinessButNetworkRequiresEveryone(){
+        var solo=create(1);startOnMatchDay(solo.room().id(),header(solo));assertThat(own(solo)).isNotNull();
+        var teams=catalog.teams(null);var local=saves.create(new CreateLeagueRequest("Local manual",2,"Coach",teams.get(0).id(),true));
+        assertThatThrownBy(()->startOnMatchDay(local.room().id(),header(local))).isInstanceOf(DefaultErrorException.class);
+        saves.addLocal(local.room().id(),header(local),new JoinLeagueRequest("Second coach",teams.get(1).id()));
+        startOnMatchDay(local.room().id(),header(local));assertThat(own(local)).isNotNull();
+        var network=create(2);var friend=saves.join(network.room().inviteCode(),new JoinLeagueRequest("Friend",teams.get(1).id()));
+        assertThatThrownBy(()->startOnMatchDay(network.room().id(),header(network))).isInstanceOf(DefaultErrorException.class);
+        ready(network);ready(friend);var date=repository.date(network.room().id());matches.tick(network.room().id());assertThat(repository.currentDay(network.room().id())).isEmpty();assertThat(repository.date(network.room().id())).isEqualTo(date);
+        startOnMatchDay(network.room().id(),header(network));assertThat(own(network)).isNotNull();
+    }
+
     @Autowired
     LeagueCalendarService calendar;
 
@@ -652,7 +692,7 @@ class MatchdayTests {
         );
         ready(a);
         ready(b);
-        matches.start(id, header(a));
+        startOnMatchDay(id, header(a));
         assertThat(repository.currentDay(id)).hasSize(20);
         assertThat(matches.view(id, header(a), null).selected().fixtureId()).isNotEqualTo(
             matches.view(id, header(b), null).selected().fixtureId()
@@ -693,7 +733,7 @@ class MatchdayTests {
         assertThat(saves.room(id).status()).isEqualTo("LIVE");
         assertThat(saves.room(id).roundNumber()).isEqualTo(1);
         assertThat(saves.room(id).members()).allMatch(m -> m.ready());
-        assertThatCode(() -> matches.start(id, header(a))).doesNotThrowAnyException();
+        assertThatCode(() -> startOnMatchDay(id, header(a))).doesNotThrowAnyException();
         assertThat(repository.currentDay(id)).hasSize(20);
         var progress = matches.view(id, header(a), null).participants();
         assertThat(progress).anyMatch(p -> p.teamId() == brazil.id() && p.status().equals("FINISHED"));
@@ -713,7 +753,7 @@ class MatchdayTests {
     }
 
     @Test
-    void legacyReadyRoomsDoNotStartWithoutANewExplicitConfirmation() {
+    void readinessNeverStartsMatchesOrChangesCalendarEvenWithLegacyPendingFlag() {
         var a = create(1);
         var id = a.room().id();
         db.update("UPDATE save_members SET ready=TRUE WHERE save_id=?", id);
@@ -722,8 +762,13 @@ class MatchdayTests {
         matches.tick(id);
         assertThat(repository.currentDay(id)).isEmpty();
         ready(a);
-        assertThat(matches.candidates()).contains(id);
+        db.update("UPDATE game_saves SET matchday_pending=TRUE WHERE id=?",id);
+        var date=repository.date(id);
+        assertThat(matches.candidates()).doesNotContain(id);
         matches.tick(id);
+        assertThat(repository.currentDay(id)).isEmpty();
+        assertThat(repository.date(id)).isEqualTo(date);
+        startOnMatchDay(id,header(a));
         assertThat(repository.currentDay(id)).isNotEmpty();
     }
 
@@ -756,6 +801,34 @@ class MatchdayTests {
         when(clock.instant()).thenAnswer(i -> now.get());
     }
 
+    private void startOnMatchDay(String id, String authorization) {
+        if (!saves.room(id).status().equals("LIVE")) {
+            var date = repository.nextHumanDate(id).orElseThrow();
+            db.update("UPDATE save_teams SET calendar_day=(SELECT DATEDIFF('DAY',calendar_start_date,?) + 1 FROM game_saves WHERE id=?) WHERE save_id=?",date,id,id);
+        }
+        matches.start(id, authorization);
+    }
+
+    @Test
+    void matchCannotStartBeforeItsScheduledDay() {
+        var access = create(1);
+        var id = access.room().id();
+        var next = repository.nextHumanDate(id).orElseThrow();
+        var ticket = matches.view(id,header(access),null).ticket();
+        assertThat(ticket).isNotNull();
+        assertThat(ticket.date()).isEqualTo(next);
+        assertThat(java.util.List.of(ticket.homeId(),ticket.awayId())).contains(access.room().members().getFirst().teamId());
+        assertThat(ticket.homeName()).isNotBlank();
+        assertThat(ticket.awayName()).isNotBlank();
+        assertThat(ticket.homeColor()).matches("#[0-9a-fA-F]{6}");
+        assertThat(ticket.awayColor()).matches("#[0-9a-fA-F]{6}");
+        db.update("UPDATE save_teams SET calendar_day=(SELECT DATEDIFF('DAY',calendar_start_date,?) FROM game_saves WHERE id=?) WHERE save_id=?",next,id,id);
+        assertThatThrownBy(() -> matches.start(id, header(access))).isInstanceOf(DefaultErrorException.class).hasMessageContaining("dia do jogo");
+        assertThat(repository.currentDay(id)).isEmpty();
+        startOnMatchDay(id, header(access));
+        assertThat(own(access)).isNotNull();
+    }
+
     private LeagueAccessResponse create(int capacity) {
         return saves.create(
             new CreateLeagueRequest("Jornada teste", capacity, "Treinador", catalog.teams(null).getFirst().id())
@@ -783,14 +856,14 @@ class MatchdayTests {
     void readinessStartsAPersistentDayAndFinalizationIsExactlyOnce() {
         var a = create(1);
         var id = a.room().id();
-        assertThatThrownBy(() -> matches.start(id, header(a))).isInstanceOf(DefaultErrorException.class);
+        assertThat(repository.currentDay(id)).isEmpty();
         ready(a);
-        matches.start(id, header(a));
+        startOnMatchDay(id, header(a));
         var first = own(a);
         assertThat(first).isNotNull();
         assertThat(first.status()).isEqualTo("LIVE");
         int size = repository.currentDay(id).size();
-        matches.start(id, header(a));
+        startOnMatchDay(id, header(a));
         assertThat(repository.currentDay(id)).hasSize(size);
         for (int i = 0; i < 160; i++) {
             tick(id);
@@ -832,7 +905,7 @@ class MatchdayTests {
         var a = create(1);
         var id = a.room().id();
         ready(a);
-        matches.start(id, header(a));
+        startOnMatchDay(id, header(a));
         var state = own(a);
         var t = state.home().id == a.room().members().getFirst().teamId() ? state.home() : state.away();
         assertThatThrownBy(() ->
@@ -918,7 +991,7 @@ class MatchdayTests {
         var b = saves.join(a.room().inviteCode(), new JoinLeagueRequest("Amigo", home == ownTeam ? away : home));
         ready(a);
         ready(b);
-        matches.start(id, header(a));
+        startOnMatchDay(id, header(a));
         var m = own(a);
         assertThat(m.canPause()).isTrue();
         matches.action(
@@ -948,7 +1021,7 @@ class MatchdayTests {
         var a = create(1);
         var id = a.room().id();
         ready(a);
-        matches.start(id, header(a));
+        startOnMatchDay(id, header(a));
         var m = own(a);
         var row = repository.session(id, m.fixtureId()).orElseThrow();
         var state = row.state();
@@ -1024,7 +1097,7 @@ class MatchdayTests {
             acknowledgeCoach(a);
         }
         ready(a);
-        matches.start(id, header(a));
+        startOnMatchDay(id, header(a));
         var next = own(a);
         var nextTeam = next.home().id == team.id ? next.home() : next.away();
         assertThat(nextTeam.players).noneMatch(p -> p.id == booked.id);

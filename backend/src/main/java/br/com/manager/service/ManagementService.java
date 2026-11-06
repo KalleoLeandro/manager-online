@@ -126,7 +126,7 @@ public class ManagementService {
         if (saves.room(id).status().equals("LIVE")) conflict(
             "Use a tela da partida para alterar o time durante o jogo."
         );
-        if (member.ready()) conflict("Volte à preparação antes de alterar sua escalação.");
+        if (member.ready() && saves.room(id).capacity()>1 && !saves.room(id).localMultiplayer()) conflict("Volte à preparação antes de alterar sua escalação.");
         var current = state(id, member);
         if (current.version() != input.version()) conflict(
             "Sua equipe foi alterada em outra aba. Recarregue antes de salvar."

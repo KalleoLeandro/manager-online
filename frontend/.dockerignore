@@ -5,3 +5,6 @@ out-tsc/
 coverage/
 *.log
 .env
+
+# Paused local 3D experiment
+src/assets/models-local/

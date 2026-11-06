@@ -2,6 +2,7 @@ package br.com.manager.repository;
 
 import br.com.manager.models.dto.WorldCompetitionDtos.*;
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.*;
@@ -43,27 +44,36 @@ public class WorldCompetitionRepository {
     }
 
     public List<Fixture> due(String id, LocalDate date) {
-        return db.query(
+        // Read the barriers once: an inlined CTE can be recomputed for every fixture when
+        // PostgreSQL has not analyzed a newly populated league yet.
+        var parameters = new MapSqlParameterSource("id", id).addValue("date", date);
+        var barriers = new HashMap<Long, LocalDate>();
+        db.query(
             """
-            WITH human_barriers AS (
-                SELECT pending.season_id,MIN(pending.match_date) AS first_date
-                FROM national_fixtures pending JOIN save_members m ON m.save_id=pending.save_id
-                    AND (m.team_id=pending.home_team_id OR m.team_id=pending.away_team_id)
-                WHERE pending.save_id=:id AND pending.status='SCHEDULED' GROUP BY pending.season_id
-            )
+            SELECT pending.season_id,MIN(pending.match_date) AS first_date
+            FROM national_fixtures pending
+            WHERE pending.save_id=:id AND pending.status='SCHEDULED'
+            AND (pending.home_team_id IN (SELECT team_id FROM save_members WHERE save_id=:id)
+                OR pending.away_team_id IN (SELECT team_id FROM save_members WHERE save_id=:id))
+            GROUP BY pending.season_id
+            """,
+            parameters,
+            (org.springframework.jdbc.core.RowCallbackHandler) r ->
+                barriers.put(r.getLong("season_id"), r.getObject("first_date", LocalDate.class))
+        );
+        var fixtures = db.query(
+            """
             SELECT f.id,f.season_id,f.match_date,f.home_team_id,f.away_team_id,h.rating AS home_rating,a.rating AS away_rating
             FROM national_fixtures f JOIN national_seasons ns ON ns.id=f.season_id
             JOIN save_teams h ON h.save_id=f.save_id AND h.team_id=f.home_team_id
             JOIN save_teams a ON a.save_id=f.save_id AND a.team_id=f.away_team_id
-            LEFT JOIN human_barriers barrier ON barrier.season_id=f.season_id
             WHERE f.save_id=:id AND f.status='SCHEDULED' AND ns.tournament_id IS NULL AND f.match_date<=:date
-            AND (barrier.first_date IS NULL OR f.match_date<barrier.first_date)
             AND NOT EXISTS(SELECT 1 FROM save_members m WHERE m.save_id=f.save_id
                 AND (m.team_id=f.home_team_id OR m.team_id=f.away_team_id))
             AND NOT EXISTS(SELECT 1 FROM match_sessions ms WHERE ms.fixture_id=f.id)
             ORDER BY f.match_date,f.id
             """,
-            new MapSqlParameterSource("id", id).addValue("date", date),
+            parameters,
             (r, n) ->
                 new Fixture(
                     r.getLong(1),
@@ -75,6 +85,10 @@ public class WorldCompetitionRepository {
                     r.getInt(7)
                 )
         );
+        return fixtures
+            .stream()
+            .filter(f -> !barriers.containsKey(f.seasonId()) || f.date().isBefore(barriers.get(f.seasonId())))
+            .toList();
     }
 
     public void finish(String id, List<MapSqlParameterSource> results) {

@@ -9,6 +9,10 @@ spring:
     driver-class-name: org.h2.Driver
     username: sa
     password: ""
+    hikari:
+      connection-init-sql: "SELECT 1"
+  transaction:
+    default-timeout: 180s
   sql:
     init:
       mode: always

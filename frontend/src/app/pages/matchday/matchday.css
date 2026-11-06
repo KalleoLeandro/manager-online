@@ -20,3 +20,7 @@
 .event-list .player-mention{font-weight:700}.event-list .home-player{color:#365c85}.event-list .away-player{color:#a84b56}
 :host-context(.dark) .event-list .home-player,:host-context([data-theme="dark"]) .event-list .home-player{color:#9ab6d5}
 :host-context(.dark) .event-list .away-player,:host-context([data-theme="dark"]) .event-list .away-player{color:#e2a0a7}
+
+.player-rating{font:700 12px ui-monospace,monospace;color:#365c85;min-width:30px;text-align:right}.player-row{grid-template-columns:36px minmax(0,1fr) 35px 45px 32px!important}
+
+.rating-legend{font-size:10px;line-height:1.5;color:#758573;margin:0 0 12px}

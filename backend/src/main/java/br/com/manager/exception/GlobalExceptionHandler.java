@@ -38,6 +38,42 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return response(status, message(status.value()), headers);
     }
 
+    @ExceptionHandler({
+        org.springframework.dao.QueryTimeoutException.class,
+        org.springframework.transaction.TransactionTimedOutException.class,
+    })
+    public ResponseEntity<Object> timedOut(Exception exception) {
+        LOG.warn("Operação cancelada por exceder o limite de tempo.", exception);
+        return response(
+            HttpStatus.GATEWAY_TIMEOUT,
+            "A operação demorou mais que o permitido e foi cancelada. Atualize a tela antes de tentar novamente.",
+            new HttpHeaders()
+        );
+    }
+
+    @ExceptionHandler({
+        org.springframework.dao.CannotAcquireLockException.class,
+        org.springframework.transaction.CannotCreateTransactionException.class,
+    })
+    public ResponseEntity<Object> databaseBusy(Exception exception) {
+        LOG.warn("Banco temporariamente indisponível ou ocupado.", exception);
+        var headers = new HttpHeaders();
+        headers.set(HttpHeaders.RETRY_AFTER, "3");
+        return response(
+            HttpStatus.SERVICE_UNAVAILABLE,
+            "O servidor está ocupado. Aguarde alguns instantes e tente novamente.",
+            headers
+        );
+    }
+
+    @ExceptionHandler(org.springframework.jdbc.UncategorizedSQLException.class)
+    public ResponseEntity<Object> databaseCancellation(org.springframework.jdbc.UncategorizedSQLException exception) {
+        var cause = exception.getSQLException();
+        if (cause != null && "55P03".equals(cause.getSQLState())) return databaseBusy(exception);
+        if (cause != null && "57014".equals(cause.getSQLState())) return timedOut(exception);
+        return unexpectedError(exception);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Object> unexpectedError(Exception exception) {
         LOG.error("Falha inesperada ao processar requisição.", exception);

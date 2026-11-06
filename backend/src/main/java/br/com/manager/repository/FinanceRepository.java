@@ -260,7 +260,7 @@ public class FinanceRepository {
     public boolean ready(String id, long team) {
         return (
             db.queryForObject(
-                "SELECT COUNT(*) FROM save_members WHERE save_id=:id AND team_id=:team AND ready=TRUE",
+                "SELECT COUNT(*) FROM save_members m JOIN game_saves g ON g.id=m.save_id WHERE m.save_id=:id AND m.team_id=:team AND m.ready=TRUE AND g.capacity>1 AND g.local_multiplayer=FALSE",
                 params(id, team),
                 Integer.class
             ) > 0

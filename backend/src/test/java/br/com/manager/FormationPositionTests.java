@@ -44,8 +44,55 @@ class FormationPositionTests {
     }
 
     @Test
+    void defensiveAdaptationSupportsDetailedPositionsAndKeepsSecondaryPositionsAtFullAbility() {
+        for (String natural : List.of("DEF", "ZAG")) {
+            assertThat(PlayerPositionRules.fit(natural, List.of("ZAG"), "LE")).isEqualTo(.90);
+            assertThat(PlayerPositionRules.fit(natural, List.of("ZAG"), "LD")).isEqualTo(.90);
+            assertThat(PlayerPositionRules.fit(natural, List.of("ZAG", "LD"), "LD")).isOne();
+        }
+        assertThat(PlayerPositionRules.fit("LD", List.of("LD"), "ALD")).isEqualTo(.96);
+        assertThat(PlayerPositionRules.fit("LE", List.of("LE"), "ZAG")).isEqualTo(.90);
+        assertThat(PlayerPositionRules.fit("ZAG", List.of("ZAG"), "CA")).isEqualTo(.42);
+        assertThat(PlayerPositionRules.fit("ZAG", List.of("ZAG"), "GOL")).isEqualTo(.18);
+        var player = new Player();
+        player.position = "ZAG";
+        player.ability = 80;
+        player.preferredPositions = List.of("ZAG");
+        PlayerPositionRules.assign(player, "ZAG");
+        double defending = MatchEngine.skill(player, "tackling");
+        PlayerPositionRules.assign(player, "LD");
+        assertThat(MatchEngine.skill(player, "tackling")).isCloseTo(defending * .90, within(.0001));
+        assertThat(player.ability).isEqualTo(80);
+    }
+
+    @Test
+    void attackersKeepRelatedSkillsWhenMovingBetweenWingAndCentreForward() {
+        for (String natural : List.of("ATA", "PE", "PD", "CA", "SA")) {
+            var preferred = natural.equals("ATA") ? List.of("CA") : List.of(natural);
+            for (String assigned : List.of("PE", "PD", "CA", "SA"))
+                assertThat(PlayerPositionRules.fit(natural, preferred, assigned)).isBetween(.90, 1.0);
+        }
+        assertThat(PlayerPositionRules.fit("PE", List.of("PE"), "PD")).isEqualTo(.96);
+        assertThat(PlayerPositionRules.fit("CA", List.of("CA"), "SA")).isEqualTo(.96);
+        assertThat(PlayerPositionRules.fit("PE", List.of("PE", "CA"), "CA")).isOne();
+        assertThat(PlayerPositionRules.fit("CA", List.of("CA"), "PE")).isEqualTo(.90);
+        assertThat(PlayerPositionRules.fit("PE", List.of("PE"), "ZAG")).isEqualTo(.42);
+        assertThat(PlayerPositionRules.fit("CA", List.of("CA"), "GOL")).isEqualTo(.18);
+        var player = new Player();
+        player.position = "PE";
+        player.ability = 80;
+        player.attributes.put("finishing", 80);
+        player.preferredPositions = List.of("PE");
+        PlayerPositionRules.assign(player, "PE");
+        double finishing = MatchEngine.skill(player, "finishing");
+        PlayerPositionRules.assign(player, "CA");
+        assertThat(MatchEngine.skill(player, "finishing")).isCloseTo(finishing * .90, within(.0001));
+        assertThat(player.ability).isEqualTo(80);
+    }
+
+    @Test
     void broadCategoryDoesNotMakeEverySpecialistInterchangeable() {
-        assertThat(PlayerPositionRules.fit("DEF", List.of("ZAG"), "LD")).isLessThan(.8);
+        assertThat(PlayerPositionRules.fit("DEF", List.of("ZAG"), "LD")).isEqualTo(.90);
         assertThat(PlayerPositionRules.fit("ATA", List.of("CA"), "VOL")).isLessThan(.5);
         assertThat(PlayerPositionRules.fit("GOL", List.of("GOL"), "CA")).isLessThan(.25);
     }

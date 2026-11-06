@@ -390,3 +390,8 @@ CREATE TABLE IF NOT EXISTS tournament_draw_views(
     member_id VARCHAR(36) NOT NULL REFERENCES save_members(id) ON DELETE CASCADE,
     PRIMARY KEY(draw_id,member_id)
 );
+
+-- Match performance history; old seasons retain an unknown average until new rated games.
+ALTER TABLE match_player_seasons ADD COLUMN IF NOT EXISTS rating_total DECIMAL(12,1) NOT NULL DEFAULT 0;
+ALTER TABLE match_player_seasons ADD COLUMN IF NOT EXISTS rated_appearances INTEGER NOT NULL DEFAULT 0;
+CREATE TABLE IF NOT EXISTS match_player_ratings (save_id VARCHAR(36) NOT NULL REFERENCES game_saves(id) ON DELETE CASCADE,fixture_id BIGINT NOT NULL REFERENCES national_fixtures(id) ON DELETE CASCADE,player_id BIGINT NOT NULL,minutes INTEGER NOT NULL,rating DECIMAL(3,1),PRIMARY KEY(save_id,fixture_id,player_id),FOREIGN KEY(save_id,player_id) REFERENCES save_players(save_id,player_id) ON DELETE CASCADE);

@@ -27,8 +27,25 @@ public final class PlayerPositionRules {
     public static double fit(String natural, List<String> preferred, String assigned) {
         if (assigned == null) return 1; // Existing persisted matches keep their previous behaviour.
         if (preferred.contains(assigned)) return 1;
-        if (natural.equals("GOL") || assigned.equals("GOL")) return .18;
-        if (FormationRules.family(assigned).equals(natural)) return .72;
+        String naturalFamily = FormationRules.family(natural);
+        String assignedFamily = FormationRules.family(assigned);
+        if (naturalFamily.equals("GOL") || assignedFamily.equals("GOL")) return .18;
+        if (naturalFamily.equals("DEF") && assignedFamily.equals("DEF")) {
+            if (
+                (Set.of("LE", "ALE").contains(assigned) &&
+                    preferred.stream().anyMatch(Set.of("LE", "ALE")::contains)) ||
+                (Set.of("LD", "ALD").contains(assigned) && preferred.stream().anyMatch(Set.of("LD", "ALD")::contains))
+            ) return .96;
+            return .90;
+        }
+        if (naturalFamily.equals("ATA") && assignedFamily.equals("ATA")) {
+            if (
+                (Set.of("PE", "PD").contains(assigned) && preferred.stream().anyMatch(Set.of("PE", "PD")::contains)) ||
+                (Set.of("CA", "SA").contains(assigned) && preferred.stream().anyMatch(Set.of("CA", "SA")::contains))
+            ) return .96;
+            return .90;
+        }
+        if (assignedFamily.equals(naturalFamily)) return .72;
         if (
             (Set.of("ME", "PE", "ALE", "LE").contains(assigned) &&
                 preferred.stream().anyMatch(Set.of("ME", "PE", "ALE", "LE")::contains)) ||

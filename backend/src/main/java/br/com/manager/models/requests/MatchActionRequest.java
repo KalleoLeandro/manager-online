@@ -6,7 +6,7 @@ import jakarta.validation.constraints.*;
 
 public record MatchActionRequest(
     @NotBlank
-    @Pattern(regexp = "SUBSTITUTE|SET_KEEPER|TACTICS|PENALTY_TAKER|OPEN_TACTICS|PAUSE|RESUME|ENCOURAGE|DEMAND|CALM|COMPLAIN")
+    @Pattern(regexp = "SUBSTITUTE|SWAP_POSITIONS|TALK_PRAISE|TALK_ENCOURAGE|TALK_CRITICIZE|SET_KEEPER|TACTICS|PENALTY_TAKER|OPEN_TACTICS|PAUSE|RESUME|ENCOURAGE|DEMAND|CALM|COMPLAIN")
     String type,
     @Positive Long playerOut,
     @Positive Long playerIn,

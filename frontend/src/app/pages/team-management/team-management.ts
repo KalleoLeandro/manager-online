@@ -1,3 +1,4 @@
+import {LeagueExit} from '../../components/league-exit/league-exit';
 import {TournamentDraw} from '../../components/tournament-draw/tournament-draw';
 import {positionFamily} from '../../utils/player-positions';
 import { SeasonBudget } from '../../components/season-budget/season-budget';
@@ -40,9 +41,8 @@ import { clubTheme } from '../../utils/club-theme';
 import { formations, roles, suggestLineup } from '../../utils/formations';
 import { readLocal, writeLocal } from '../../utils/local-storage';
 
-@Component({selector:'app-team-management',providers:[SaveRealtimeService],imports:[TournamentDraw,SeasonBudget,ClubFinancePage,TransferMarketPage,DayProgress,TeamStrategy,LocalPlayers,SeasonCalendarPage,MatchdayEntry,GameIcon,NationalChampionshipPage,ManagementCalendar,ManagerAvatar,CoachAnnouncement,PlayerSearchPage,TeamMessagesPage,JuniorTeamPage,ManagementSectionPage,LeagueTeamsPage,WorldCompetitionsPage,ClubCrest,FormsModule,CurrencyPipe,DecimalPipe,LiveStatus,TacticalBoard,ManagementRoster],templateUrl:'./team-management.html',styleUrl:'./team-management.css'})
+@Component({selector:'app-team-management',providers:[SaveRealtimeService],imports:[LeagueExit,TournamentDraw,SeasonBudget,ClubFinancePage,TransferMarketPage,DayProgress,TeamStrategy,LocalPlayers,SeasonCalendarPage,MatchdayEntry,GameIcon,NationalChampionshipPage,ManagementCalendar,ManagerAvatar,CoachAnnouncement,PlayerSearchPage,TeamMessagesPage,JuniorTeamPage,ManagementSectionPage,LeagueTeamsPage,WorldCompetitionsPage,ClubCrest,FormsModule,CurrencyPipe,DecimalPipe,LiveStatus,TacticalBoard,ManagementRoster],templateUrl:'./team-management.html',styleUrl:'./team-management.css'})
 export class TeamManagementPage implements OnInit {
-  constructor(){effect(()=>{if(this.realtime.room()?.status==='LIVE')location.hash=`match/${this.id}`;});}
   private readonly api=inject(ManagementService); private readonly saves=inject(SaveService);
   private readonly auth=inject(AuthService); private readonly destroy=inject(DestroyRef);
   readonly realtime=inject(SaveRealtimeService);
@@ -61,12 +61,14 @@ export class TeamManagementPage implements OnInit {
   readonly pageHeading=computed(()=>managementPages[this.tab()]);
   readonly activeMenu=computed(()=>this.tabs.find(item=>item.pages.includes(this.tab())));
   selectMenu(id:ManagementPage):void{const menu=this.tabs.find(item=>item.id===id)!;if(menu.links.length)this.openMenu.update(current=>current===id?null:id);else{this.tab.set(id);this.openMenu.set(null);}}
+  calendarNavigate(page:ManagementPage):void{if(page==='calendar')document.getElementById('season-calendar')?.scrollIntoView({behavior:'smooth',block:'start'});else this.navigate(page);}
   navigate(page:ManagementPage):void{this.tab.set(page);this.openMenu.set(null);}
 
   readonly theme=computed(()=>clubTheme(this.data()?.palette.primary||'#334155',this.data()?.palette.secondary||'#ffffff',this.dark(),this.data()?.palette.awayAccent,this.data()?.palette.homeAccent));
   readonly me=computed(()=>(this.realtime.room()||this.data()?.room)?.members.find(m=>m.id===this.data()?.memberId));
   readonly readyCount=computed(()=>(this.realtime.room()||this.data()?.room)?.members.filter(m=>m.ready).length||0);
-  readonly locked=computed(()=>!!this.me()?.ready||this.saving()||this.realtime.deleted());
+  readonly network=computed(()=>{const room=this.realtime.room()||this.data()?.room;return !!room&&room.capacity>1&&!room.localMultiplayer;});
+  readonly locked=computed(()=>(this.network()&&!!this.me()?.ready)||(this.realtime.room()||this.data()?.room)?.status==='LIVE'||this.saving()||this.realtime.deleted());
   readonly strength=computed(()=>{const players=this.lineup().map(id=>this.data()?.players.find(p=>p.id===id)).filter(p=>!!p);return players.length?Math.round(players.reduce((sum,p)=>sum+effectiveAbility(p),0)/players.length):0;});
   readonly fitness=computed(()=>{const players=this.data()?.players||[];return players.length?Math.round(players.reduce((sum,p)=>sum+p.fitness,0)/players.length):0;});
   readonly valid=computed(()=>this.lineup().length===11&&new Set(this.lineup()).size===11&&this.lineup().every((id,index)=>this.data()?.players.some(p=>p.id===id&&available(p))));
@@ -104,6 +106,7 @@ export class TeamManagementPage implements OnInit {
   toggleTheme(): void {this.dark.update(value=>!value);if(this.data())writeLocal(this.themeKey(this.data()!.teamId),this.dark());}
   changeFormation(value:string):void {if(this.locked())return;this.formation.set(value);this.tacticalPlan.update(p=>({...p,positions:{}}));this.lineup.set(suggestLineup(this.data()!.players,value));this.dirty.set(true);this.notice.set('Formação alterada. Confira os titulares e salve.');}
   changeSlot(event:{index:number;playerId: number}):void {if(this.locked())return;const old=this.lineup()[event.index];this.tacticalPlan.update(p=>{const positions={...p.positions};if(positions[old]){positions[event.playerId]=positions[old];delete positions[old];}return {...p,positions};});this.lineup.update(list=>list.map((id,index)=>index===event.index?event.playerId:id));this.dirty.set(true);this.notice.set('Escalação alterada. Salve para confirmar.');}
+  swapSlots(event:{first:number;second:number}):void{if(this.locked())return;const a=this.lineup().indexOf(event.first),b=this.lineup().indexOf(event.second);if(a<0||b<0)return;this.lineup.update(list=>{const next=[...list];[next[a],next[b]]=[next[b],next[a]];return next;});this.tacticalPlan.update(plan=>{const positions={...plan.positions},pa=positions[event.first],pb=positions[event.second];delete positions[event.first];delete positions[event.second];if(pa)positions[event.second]=pa;if(pb)positions[event.first]=pb;return {...plan,positions};});this.dirty.set(true);}
   selectPlayer(id:number):void {
     if(this.locked()||this.lineup().includes(id))return;
     const player=this.data()!.players.find(p=>p.id===id)!;
@@ -118,7 +121,7 @@ export class TeamManagementPage implements OnInit {
     this.api.update(this.id,{formation:this.formation(),mentality:this.mentality(),tacticalPlan:this.tacticalPlan(),lineup:this.lineup(),version:this.data()!.version}).pipe(finalize(()=>this.saving.set(false)),takeUntilDestroyed(this.destroy)).subscribe({next:state=>{this.accept(state);this.notice.set('Escalação e tática salvas na sua liga.');},error:e=>{this.error.set(e.error?.message||'Não foi possível salvar a equipe.');if(e.status===409)this.conflict.set(true);}});
   }
   ready():void {
-    if(this.confirming()||this.dirty()||!this.valid())return;
+    if(!this.network()||this.confirming()||this.dirty()||!this.valid())return;
     this.confirming.set(true);this.error.set('');
     const wasReady=!!this.me()?.ready;
     const initial:Observable<TeamManagement|null>=this.data()!.version===0&&!wasReady

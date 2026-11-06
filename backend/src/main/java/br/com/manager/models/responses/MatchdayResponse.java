@@ -12,7 +12,8 @@ public record MatchdayResponse(
     List<Participant> participants,
     int speedPercent,
     boolean canChangeSpeed,
-    boolean localMultiplayer
+    boolean localMultiplayer,
+    MatchTicketDto ticket
 ) {
     public record Participant(String name, long teamId, String teamName, String status, Long fixtureId) {}
 
@@ -40,6 +41,7 @@ public record MatchdayResponse(
         String competitionName,
         Integer homePenalties,
         Integer awayPenalties,
-        boolean cupMatch
+        boolean cupMatch,
+        boolean halfTimeBreak
     ) {}
 }

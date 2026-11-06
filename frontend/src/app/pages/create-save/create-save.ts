@@ -1,3 +1,4 @@
+import {LogoutButton} from '../../components/logout-button/logout-button';
 import { Component, computed, effect, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
@@ -13,7 +14,7 @@ import { LiveStatus } from '../../components/live-status/live-status';
 import { SavePresence } from '../../components/save-presence/save-presence';
 import { LeagueRetentionNotice } from '../../components/league-retention-notice/league-retention-notice';
 
-@Component({ selector: 'app-create-save', providers: [SaveRealtimeService], imports: [FormsModule, ClubCrest, TeamPicker, TeamRoster, LiveStatus, SavePresence,LeagueRetentionNotice], templateUrl: './create-save.html', styleUrl: './create-save.css' })
+@Component({ selector: 'app-create-save', providers: [SaveRealtimeService], imports:[LogoutButton,FormsModule, ClubCrest, TeamPicker, TeamRoster, LiveStatus, SavePresence,LeagueRetentionNotice], templateUrl: './create-save.html', styleUrl: './create-save.css' })
 export class CreateSave implements OnInit {
   private readonly catalogApi = inject(CatalogService);
   private readonly saves = inject(SaveService);

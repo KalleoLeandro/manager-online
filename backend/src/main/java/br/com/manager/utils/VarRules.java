@@ -92,6 +92,8 @@ public final class VarRules {
             team.stats.shots--;
             team.stats.shotsOnTarget--;
             scorer.shots--;
+            scorer.shotsOnTarget=Math.max(0,scorer.shotsOnTarget-1);
+            MatchEngine.active(team==m.home?m.away:m.home).forEach(p->p.goalsAgainst=Math.max(0,p.goalsAgainst-1));
             team.stats.expectedGoals = Math.max(0, team.stats.expectedGoals - review.expectedGoals);
             if (review.penalty) team.stats.penaltiesScored--;
             if (reason == 0) team.stats.offsides++;

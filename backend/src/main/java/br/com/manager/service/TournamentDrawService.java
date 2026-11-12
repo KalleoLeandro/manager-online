@@ -6,6 +6,7 @@ import br.com.manager.models.dto.TournamentDtos.Edition;
 import br.com.manager.repository.*;
 import br.com.manager.utils.TournamentDrawSchedule;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.*;
 import org.springframework.stereotype.Service;
 
@@ -27,6 +28,10 @@ public class TournamentDrawService {
     }
 
     public void record(String id, Edition edition, int stage) {
+        record(id, edition, stage, TournamentDrawSchedule.date(edition, stage));
+    }
+
+    public void record(String id, Edition edition, int stage, LocalDate heldOn) {
         if (!TournamentDrawSchedule.ceremony(edition, stage)) return;
         var teams = new HashMap<Long, String>();
         tournaments.teams(id, edition.id()).forEach(t -> teams.put(t.id(), t.name()));
@@ -68,7 +73,7 @@ public class TournamentDrawService {
                 0,
                 edition.name(),
                 edition.rules().stages().get(stage).label(),
-                TournamentDrawSchedule.date(edition, stage),
+                heldOn,
                 Instant.now().toEpochMilli() + 3000,
                 List.copyOf(rows)
             )

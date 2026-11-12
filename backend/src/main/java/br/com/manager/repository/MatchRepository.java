@@ -134,7 +134,7 @@ public class MatchRepository {
 
     public List<MatchFixtureDto> humanMatchday(String id, LocalDate date) {
         return db.query(
-            "SELECT f.*,h.name AS home_name,a.name AS away_name FROM national_fixtures f JOIN national_seasons ns ON ns.id=f.season_id JOIN save_teams h ON h.save_id=f.save_id AND h.team_id=f.home_team_id JOIN save_teams a ON a.save_id=f.save_id AND a.team_id=f.away_team_id WHERE f.save_id=:id AND f.match_date=:date AND f.status='SCHEDULED' AND (EXISTS(SELECT 1 FROM save_members m WHERE m.save_id=f.save_id AND (m.team_id=f.home_team_id OR m.team_id=f.away_team_id)) OR ns.tournament_id IS NULL AND EXISTS(SELECT 1 FROM save_members m JOIN save_teams t ON t.save_id=m.save_id AND t.team_id=m.team_id WHERE m.save_id=f.save_id AND t.league_id=ns.league_id)) ORDER BY f.id",
+            "SELECT f.*,h.name AS home_name,a.name AS away_name FROM national_fixtures f JOIN national_seasons ns ON ns.id=f.season_id JOIN save_teams h ON h.save_id=f.save_id AND h.team_id=f.home_team_id JOIN save_teams a ON a.save_id=f.save_id AND a.team_id=f.away_team_id WHERE f.save_id=:id AND f.match_date=:date AND f.status='SCHEDULED' AND (EXISTS(SELECT 1 FROM save_members m WHERE m.save_id=f.save_id AND (m.team_id=f.home_team_id OR m.team_id=f.away_team_id)) OR ns.tournament_id IS NULL AND ns.format<>'FRIENDLY' AND EXISTS(SELECT 1 FROM save_members m JOIN save_teams t ON t.save_id=m.save_id AND t.team_id=m.team_id WHERE m.save_id=f.save_id AND t.league_id=ns.league_id)) ORDER BY f.id",
             params(id).addValue("date", date),
             FIXTURE_MAPPER
         );

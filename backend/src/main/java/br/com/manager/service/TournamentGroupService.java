@@ -11,9 +11,11 @@ import org.springframework.stereotype.Service;
 public class TournamentGroupService {
 
     private final TournamentRepository repository;
+    private final TournamentCalendarService calendar;
 
-    public TournamentGroupService(TournamentRepository repository) {
+    public TournamentGroupService(TournamentRepository repository, TournamentCalendarService calendar) {
         this.repository = repository;
+        this.calendar = calendar;
     }
 
     public boolean isGroup(Edition edition, int index) {
@@ -26,6 +28,26 @@ public class TournamentGroupService {
         var groups = new HashMap<Long, String>();
         if (stage.format().equals("UEFA_LEAGUE")) {
             var sorted = entrants.stream().sorted(Comparator.comparingInt(Entrant::rank)).toList();
+            boolean impossible = false;
+            for (int pot = 0; pot < 4; pot++) {
+                var members = sorted.subList(pot * 9, pot * 9 + 9);
+                for (var member : members)
+                    if (
+                        members
+                            .stream()
+                            .filter(t -> Objects.equals(t.association(), member.association()))
+                            .count() > 4
+                    ) impossible = true;
+            }
+            if (impossible) {
+                var associations = new LinkedHashMap<String, ArrayDeque<Entrant>>();
+                sorted.forEach(t -> associations.computeIfAbsent(t.association(), k -> new ArrayDeque<>()).add(t));
+                var balanced = new ArrayList<Entrant>();
+                while (balanced.size() < 36)
+                    for (var association : associations.values())
+                        if (!association.isEmpty()) balanced.add(association.removeFirst());
+                sorted = balanced;
+            }
             var clubs = new ArrayList<ChampionsLeagueDraw.Club>();
             for (int i = 0; i < sorted.size(); i++) {
                 var team = sorted.get(i);
@@ -35,28 +57,37 @@ public class TournamentGroupService {
                 fixtures.add(new NationalLeagueDraw.Fixture(f.round(), f.date(), f.home(), f.away()))
             );
         } else {
-            var drawn = LibertadoresGroupDraw.draw(entrants, seed);
+            var drawn = edition.key().equals("CLUB_WORLD_CUP")
+                ? ClubWorldCupDraw.draw(entrants, seed)
+                : LibertadoresGroupDraw.draw(entrants, seed);
             for (var group : drawn.entrySet()) {
                 group.getValue().forEach(t -> groups.put(t.id(), group.getKey()));
                 var schedule = NationalLeagueDraw.draw(
                     group.getValue().stream().map(Entrant::id).toList(),
                     stage.matchDates().getFirst(),
-                    stage.matchDates().getLast(),
+                    stage.matchDates().getLast().isBefore(stage.matchDates().getFirst().plusDays(15))
+                        ? stage.matchDates().getFirst().plusDays(15)
+                        : stage.matchDates().getLast(),
                     seed ^ group.getKey().hashCode()
                 );
-                schedule.forEach(f ->
-                    fixtures.add(
-                        new NationalLeagueDraw.Fixture(
-                            f.round(),
-                            stage.matchDates().get(f.round() - 1),
-                            f.homeTeamId(),
-                            f.awayTeamId()
+                schedule
+                    .stream()
+                    .filter(f -> f.round() <= stage.matchDates().size())
+                    .forEach(f ->
+                        fixtures.add(
+                            new NationalLeagueDraw.Fixture(
+                                f.round(),
+                                stage.matchDates().get(f.round() - 1),
+                                f.homeTeamId(),
+                                f.awayTeamId()
+                            )
                         )
-                    )
-                );
+                    );
             }
         }
-        repository.leagueStage(id, edition, index, entrants, fixtures, groups);
+        var planned = calendar.plan(id, fixtures);
+        repository.leagueStage(id, edition, index, entrants, planned, groups);
+        calendar.protectNationals(id, planned);
     }
 
     public boolean advance(String id, Edition edition, int index, List<Game> games) {
@@ -82,7 +113,14 @@ public class TournamentGroupService {
                     .stream()
                     .filter(t -> group.equals(groups.get(t.id())))
                     .toList();
-                var ranking = TournamentStandings.rank(members, played, false);
+                var ranking = edition.key().equals("CLUB_WORLD_CUP")
+                    ? FifaGroupStandings.rank(
+                          members,
+                          played,
+                          repository.fairPlay(edition.id()),
+                          edition.id() ^ group.hashCode()
+                      )
+                    : TournamentStandings.rank(members, played, false);
                 for (int i = 0; i < 2; i++) repository.advanceTeam(
                     edition.id(),
                     index + 1,

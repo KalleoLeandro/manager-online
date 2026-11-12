@@ -163,7 +163,7 @@ public class NationalSeasonRepository {
     public boolean participatesInYear(String saveId, Long teamId, int year) {
         return (
             db.queryForObject(
-                "SELECT COUNT(*) FROM national_seasons s JOIN national_season_teams t ON t.save_id=s.save_id AND t.season_id=s.id WHERE s.save_id=:id AND t.team_id=:team AND s.season_year=:year AND s.tournament_id IS NULL",
+                "SELECT COUNT(*) FROM national_seasons s JOIN national_season_teams t ON t.save_id=s.save_id AND t.season_id=s.id WHERE s.save_id=:id AND t.team_id=:team AND s.season_year=:year AND s.tournament_id IS NULL AND s.format<>'FRIENDLY'",
                 new MapSqlParameterSource("id", saveId).addValue("team", teamId).addValue("year", year),
                 Integer.class
             ) > 0
@@ -229,7 +229,7 @@ public class NationalSeasonRepository {
 
     public List<NationalSeasonDto> seasons(String saveId, Long teamId) {
         return db.query(
-            "SELECT s.* FROM national_seasons s JOIN national_season_teams t ON t.save_id=s.save_id AND t.season_id=s.id WHERE s.save_id=:id AND t.team_id=:team AND s.tournament_id IS NULL ORDER BY s.season_year DESC",
+            "SELECT s.* FROM national_seasons s JOIN national_season_teams t ON t.save_id=s.save_id AND t.season_id=s.id WHERE s.save_id=:id AND t.team_id=:team AND s.tournament_id IS NULL AND s.format<>'FRIENDLY' ORDER BY s.season_year DESC",
             new MapSqlParameterSource("id", saveId).addValue("team", teamId),
             SEASON_MAPPER
         );

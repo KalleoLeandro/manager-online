@@ -8,7 +8,7 @@ import { ClubCrest } from '../club-crest/club-crest';
 import { GameIcon } from '../game-icon/game-icon';
 import { MoneyInput } from '../money-input/money-input';
 import { TrophyImage } from '../trophy-image/trophy-image';
-import { seasonTrophies } from '../../utils/trophies';
+import { seasonTrophies, WORLD_TROPHIES } from '../../utils/trophies';
 @Component({selector:'app-season-budget',imports:[FormsModule,CurrencyPipe,ClubCrest,GameIcon,TrophyImage,MoneyInput],templateUrl:'./season-budget.html',styleUrl:'./season-budget.css'})
 export class SeasonBudget {
  readonly showSummary=input(true);
@@ -17,6 +17,7 @@ export class SeasonBudget {
  readonly data=signal<FinanceState|null>(null);readonly error=signal('');readonly busy=signal(false);readonly loading=signal(false);
  readonly terms=signal<BudgetTerms>({seasonId:0,promisedRank:1,transferBudget:0,salaryBudget:0,infrastructureBudget:0,miscellaneousBudget:0,reserveBudget:0});
  readonly total=computed(()=>{const t=this.terms();return t.transferBudget+t.salaryBudget+t.infrastructureBudget+t.miscellaneousBudget+t.reserveBudget;});
+ readonly worldTrophies=WORLD_TROPHIES;
  readonly trophies=computed(()=>{const season=this.data()?.season;return seasonTrophies(season?.country||'',season?.division||1,season?.competitionName||'');});
  readonly selectedObjective=computed(()=>this.data()?.objectives.find(o=>o.rank===this.terms().promisedRank));
  readonly confidence=computed(()=>{const d=this.data(),o=this.selectedObjective();return {board:Math.max(0,Math.min(100,(d?.boardTrust||0)+(d?.plan.approved?0:o?.boardTrustDelta||0))),fans:Math.max(0,Math.min(100,(d?.fanTrust||0)+(d?.plan.approved?0:o?.fanTrustDelta||0)))};});

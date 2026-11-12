@@ -26,6 +26,7 @@ public class DayProgressService {
     private final FinanceDailyService financialDays;
     private final WorldCompetitionService world;
     private final TournamentService tournaments;
+    private final ClubEventService clubEvents;
 
     public DayProgressService(
         SaveService saves,
@@ -38,7 +39,8 @@ public class DayProgressService {
         FinanceService finances,
         FinanceDailyService financialDays,
         WorldCompetitionService world,
-        TournamentService tournaments
+        TournamentService tournaments,
+        ClubEventService clubEvents
     ) {
         this.saves = saves;
         this.leagues = leagues;
@@ -51,6 +53,7 @@ public class DayProgressService {
         this.financialDays = financialDays;
         this.world = world;
         this.tournaments = tournaments;
+        this.clubEvents = clubEvents;
     }
 
     @Transactional(readOnly = true)
@@ -147,7 +150,8 @@ public class DayProgressService {
                     ? "Dia dedicado à recuperação física."
                     : "A comissão técnica concluiu o treino. O elenco segue em preparação para a próxima partida."
             );
-            boolean important = repository.completeScheduled(id, member.teamId(), date);
+            boolean important = clubEvents.processDay(id, member.teamId(), date);
+            important |= repository.completeScheduled(id, member.teamId(), date);
             date = date.plusDays(1);
             version = repository.advance(id, member.teamId(), day + 1);
             advanced++;

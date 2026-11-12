@@ -19,7 +19,7 @@ public class MatchStateDto {
     public long goalCelebrationUntil;
     public int celebratingGoalSequence;
     public boolean finishAfterCelebration;
-    public boolean cupMatch, decisiveTie, extraTimeAllowed, neutralVenue, periodEndPending;
+    public boolean cupMatch, friendlyMatch, decisiveTie, extraTimeAllowed, neutralVenue, periodEndPending;
     public long disciplineSeasonId;
     public int aggregateHomeBefore,
         aggregateAwayBefore,

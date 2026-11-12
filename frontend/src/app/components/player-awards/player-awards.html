@@ -1,0 +1,97 @@
+<dialog #dialog class="award-dialog" aria-labelledby="award-title" (cancel)="$event.preventDefault();later()">
+  @if(active();as award){
+  <section class="ceremony" [class.winner-phase]="current()?.place===1" [attr.data-phase]="timeline().phase">
+    <div class="spotlights" aria-hidden="true"></div>
+    <div class="ceremony-top">
+      <span>NOITE DE PREMIAÇÃO · {{award.year}}</span
+      ><button
+        type="button"
+        [disabled]="busy()"
+        (click)="later()"
+        aria-label="Assistir à cerimônia mais tarde"
+      >
+        Assistir depois ↗
+      </button>
+    </div>
+    <header>
+      <app-trophy-image [trophy]="{id:award.trophyId,name:award.title}" /><small>{{award.competition}}</small>
+      <h1 id="award-title">{{award.title}}</h1>
+      <p aria-live="polite">
+        {{timeline().phase==='intro'?'Uma temporada de grandes
+        atuações.':timeline().phase==='nominees'?'Conheça os indicados.':timeline().phase==='suspense'?'Chegou
+        o momento da decisão…':done()?'O reconhecimento de uma grande temporada.':'O resultado está sendo
+        revelado.'}}
+      </p>
+    </header>
+    @if(timeline().phase==='intro'){
+    <div class="intro-message">
+      <span>AS ESTRELAS DO JOGO</span>
+      <div class="gold-line"></div>
+    </div>
+    } @if(['nominees','suspense'].includes(timeline().phase)){
+    <div class="nominees" aria-live="polite">
+      @for(finalist of nominees();track finalist.player.playerId){
+      <article class="nominee">
+        <app-player-portrait [playerId]="finalist.player.playerId" />
+        <h2>{{finalist.player.name}}</h2>
+        <span><img appClubCrest [clubId]="finalist.player.teamId" alt="" />{{finalist.player.teamName}}</span>
+      </article>
+      }
+    </div>
+    @if(timeline().phase==='suspense'){
+    <div class="decision-pause" role="status"><i></i><i></i><i></i><strong>A decisão</strong></div>
+    } } @if(['result','done'].includes(timeline().phase)){ @for(finalist of (current()?[current()!]:[]);track
+    finalist.player.playerId){
+    <article class="award-result" [class.gold-winner]="finalist.place===1" aria-live="polite">
+      <div class="winner-portrait">
+        <app-player-portrait [playerId]="finalist.player.playerId" /><span>{{finalist.place}}º</span>
+      </div>
+      <div class="winner-copy">
+        <small>{{finalist.place===1?'O GRANDE VENCEDOR':finalist.place+'º LUGAR'}}</small>
+        <h2>{{finalist.player.name}}</h2>
+        <p><img appClubCrest [clubId]="finalist.player.teamId" alt="" />{{finalist.player.teamName}}</p>
+        <div class="winner-stats">
+          <span><b>{{finalist.player.goals}}</b>gols</span
+          ><span><b>{{finalist.player.assists}}</b>assistências</span
+          ><span><b>{{finalist.player.averageRating|number:'1.1-1'}}</b>média</span
+          ><span><b>{{finalist.player.appearances}}</b>jogos</span>@if(finalist.player.position==='GOL'){<span
+            ><b>{{finalist.player.saves}}</b>defesas</span
+          >}
+        </div>
+      </div>
+    </article>
+    }
+    <div class="revealed-results">
+      @for(finalist of results();track finalist.player.playerId){
+      <div>
+        <b>{{finalist.place}}º</b><span>{{finalist.player.name}}</span
+        ><small>{{finalist.player.teamName}}</small> @if(done()){<small class="podium-stats"
+          >{{finalist.player.goals}} gols · {{finalist.player.assists}} assistências ·
+          {{finalist.player.averageRating|number:'1.1-1'}} média</small
+        >}
+      </div>
+      }
+    </div>
+    @if(!award.finalists.length){
+    <p class="no-winner">Não houve atletas com estatísticas suficientes para conceder este prêmio.</p>
+    } }
+    <footer>
+      <div class="ceremony-progress" aria-hidden="true"><i [style.width.%]="progress()"></i></div>
+      @if(error()){
+      <p class="error" role="alert">{{error()}}</p>
+      }@if(done()){
+      <details>
+        <summary>Como o prêmio foi calculado</summary>
+        <p>{{award.criteria}}</p>
+        <p>
+          Partidas simuladas em segundo plano possuem estatísticas geradas pelo jogo. Os resultados desta
+          cerimônia ficam registrados no histórico.
+        </p>
+      </details>
+      <button type="button" class="continue" [disabled]="busy()" (click)="close()">
+        {{busy()?'Confirmando…':'Continuar'}} →</button
+      >}@else{<small class="presentation-note">A apresentação avança automaticamente.</small>}
+    </footer>
+  </section>
+  }
+</dialog>

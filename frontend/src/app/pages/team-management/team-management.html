@@ -1,5 +1,7 @@
 <app-tournament-draw [leagueId]="id"/>
+<app-player-awards [leagueId]="id" [suspended]="showIntroduction()||!budgetCleared()||(realtime.room()||data()?.room)?.status==='LIVE'"/>
 <div class="club-app" [class.dark]="dark()" [style.--page]="theme().background" [style.--surface]="theme().surface" [style.--border]="theme().border" [style.--row-highlight]="theme().rowHighlight" [style.--accent]="theme().accent" [style.--accent-ink]="theme().accentText" [style.--home]="theme().primary" [style.--away]="theme().secondary" [style.--jersey]="theme().jersey" [style.--jersey-edge]="theme().jerseyEdge" [style.--jersey-ink]="theme().jerseyInk" [style.--hero]="theme().hero" [style.--hero-text]="theme().heroText" [style.--hero-ink]="theme().heroInk">
+<app-stadium-background [teamId]="data()?.teamId||null" [dark]="dark()"/>
 @if(data();as club){
   @if(showIntroduction()){<app-coach-announcement [surname]="managerLastName" [coach]="me()?.name||'Treinador'" [team]="club.teamName" [teamId]="club.teamId" [league]="club.room.name" [round]="club.room.roundNumber" [photoUrl]="managerPhotoUrl" [saving]="introductionSaving()" [error]="introductionError()" (dismissed)="dismissIntroduction()"/>}
   <aside class="club-sidebar"><a class="manager-brand" href="#new-league"><span>M↗</span> MANAGER<em>ONLINE</em></a><div class="sidebar-club"><img appClubCrest [clubId]="club.teamId" alt=""><strong>{{club.teamName}}</strong><small>{{club.leagueName}}</small></div><span class="nav-label">CENTRAL DO CLUBE</span><nav aria-label="Gerenciamento do time">@for(item of tabs;track item.id){<div class="menu-group"><button type="button" [class.active]="activeMenu()?.id===item.id" [attr.aria-expanded]="item.links.length?openMenu()===item.id:null" [attr.aria-controls]="item.links.length?'menu-'+item.id:null" (click)="selectMenu(item.id)"><span class="menu-icon"><app-game-icon [name]="item.id"/></span>{{item.name}}<i>{{item.links.length?'⌄':'↗'}}</i></button>@if(item.links.length&&openMenu()===item.id){<div class="submenu" [id]="'menu-'+item.id">@for(link of item.links;track link.id){<button type="button" [class.active]="tab()===link.id" [attr.aria-current]="tab()===link.id?'page':null" (click)="navigate(link.id)">{{link.name}}</button>}</div>}</div>}</nav><div class="sidebar-bottom"><app-manager-avatar [photoUrl]="managerPhotoUrl"/><div><strong>{{me()?.name}}</strong><small>Treinador principal</small></div></div><a class="back-link" [href]="'#lobby/'+id">← Voltar ao saguão</a></aside>
@@ -15,6 +17,9 @@
     }
     <div class="page-heading"><div><span class="eyeline">{{club.room.capacity===1?'LIGA SOLO':'LIGA MULTIPLAYER'}} · RODADA {{(realtime.room()||club.room).roundNumber}}</span><h1>{{pageHeading().title}}</h1><p>{{pageHeading().description}}</p></div><a [href]="'#lobby/'+id" class="room-link">Saguão ↗</a></div>
     @if(activeMenu()?.links?.length){<nav class="section-tabs" aria-label="Seções de gerenciamento">@for(link of activeMenu()!.links;track link.id){<button type="button" [class.active]="tab()===link.id" [attr.aria-current]="tab()===link.id?'page':null" (click)="navigate(link.id)">{{link.name}}</button>}</nav>}
+    @if(['overview','roster','tactics'].includes(tab())){
+    <section class="management-actions" aria-label="Ações do time"><div><span class="save-dot" [class.unsaved]="dirty()"></span><span>{{dirty()?'Alterações não salvas':club.version===0?'Escalação inicial sugerida':'Seu time está salvo'}}<small>{{network()&&me()?.ready?'Você está pronto':!network()?'Inicie pela opção Partida':'Prepare o time enquanto seus amigos fazem o mesmo'}}</small></span></div><div><button type="button" class="save-team" [disabled]="locked()||!valid()||(!dirty()&&club.version>0)||conflict()" (click)="save()">{{saving()?'Salvando…':'Salvar escalação'}}</button>@if(network()){<button type="button" class="confirm-team" [disabled]="saving()||confirming()||dirty()||!valid()||realtime.status()!=='connected'" (click)="ready()">{{confirming()?'Confirmando…':me()?.ready?'Voltar à preparação':'Estou pronto ✓'}}</button>}</div></section>
+    }
     @if(error()||realtime.error()){<p class="error" role="alert">{{error()||realtime.error()}}</p>}
     @if(notice()){<div class="notice" role="status">{{notice()}} @if(conflict()){<button type="button" (click)="load()">Recarregar equipe</button>}</div>}
     @if(tab()==='calendar'){
@@ -22,7 +27,7 @@
 
       <app-management-calendar [revision]="club.version" [leagueId]="id" [room]="realtime.room()||club.room" (navigate)="calendarNavigate($event)"/>
       }
-      <app-season-calendar id="season-calendar" [revision]="club.version" [leagueId]="id" [gameRound]="(realtime.room()||club.room).roundNumber" (championship)="navigate('championship')"/>
+      <app-season-calendar id="season-calendar" [revision]="club.version" [leagueId]="id" [gameRound]="(realtime.room()||club.room).roundNumber" [disabled]="dirty()||saving()||confirming()||(network()&&!!me()?.ready)||(realtime.room()||club.room).status==='LIVE'" (changed)="load()" (championship)="navigate('championship')"/>
     }@else if(tab()==='messages'){
       <app-team-messages [coachFirstName]="managerFirstName" [club]="club" [room]="realtime.room()||club.room" [dirty]="dirty()" (navigate)="navigate($event)"/>
     }@else if(tab()==='championship'){
@@ -33,7 +38,8 @@
       <app-club-finance [leagueId]="id" [revision]="club.version" (budgetRequested)="seasonBudget.open()" (negotiate)="startNegotiation($event)"/>
     }@else if(tab()==='transfers'||tab()==='latest'){
       <app-transfer-market [teamId]="club.teamId" [leagueId]="id" [revision]="club.version" [initialPlayer]="requestedPlayer()" [mode]="tab()==='latest'?'latest':'market'" [disabled]="dirty()||saving()||confirming()||(network()&&!!me()?.ready)||(realtime.room()||club.room).status==='LIVE'" (changed)="load()"/>
-    }@else if(['training','staff','details','titles','stadium','facilities','career','options'].includes(tab())){
+    }@else if(tab()==='titles'){<app-club-titles [leagueId]="id" [teamId]="club.teamId" [revision]="club.version+(realtime.room()||club.room).roundNumber"/>
+    }@else if(['training','staff','details','stadium','facilities','career','options'].includes(tab())){
       <app-management-section [section]="tab()" [club]="club" [coach]="me()?.name||'Treinador'" [dark]="dark()" (navigate)="navigate($event)" (toggleTheme)="toggleTheme()"/>
     }@else if(tab()==='search'){
       <app-player-search [leagueId]="id" (negotiate)="startNegotiation($event)"/>
@@ -55,7 +61,7 @@
     }@else{
       <section class="panel finance-panel"><span class="eyeline">GESTÃO RESPONSÁVEL</span><h2>Recursos do seu clube</h2><strong>{{club.budget|currency:'BRL':'symbol':'1.0-0'}}</strong><p>Saldo disponível nesta liga. As negociações e movimentações financeiras serão adicionadas na próxima etapa.</p><div><span>Pontos na liga</span><b>{{club.points}}</b></div><div><span>Atletas sob seu comando</span><b>{{club.players.length}}</b></div></section>
     }
-    <footer class="management-actions"><div><span class="save-dot" [class.unsaved]="dirty()"></span><span>{{dirty()?'Alterações não salvas':club.version===0?'Escalação inicial sugerida':'Seu time está salvo'}}<small>{{network()&&me()?.ready?'Você está pronto':!network()?'Inicie pela opção Partida':'Prepare o time enquanto seus amigos fazem o mesmo'}}</small></span></div><div><button type="button" class="save-team" [disabled]="locked()||!valid()||(!dirty()&&club.version>0)||conflict()" (click)="save()">{{saving()?'Salvando…':'Salvar escalação'}}</button>@if(network()){<button type="button" class="confirm-team" [disabled]="saving()||confirming()||dirty()||!valid()||realtime.status()!=='connected'" (click)="ready()">{{confirming()?'Confirmando…':me()?.ready?'Voltar à preparação':'Estou pronto ✓'}}</button>}</div></footer>
+
     }
   </div>
 } @else {<div class="loading-state">@if(error()){<p class="error" role="alert">{{error()}}</p><a [href]="'#lobby/'+id">Voltar ao saguão</a>}@else{<p role="status">Abrindo a central do seu clube…</p>}</div>}

@@ -269,6 +269,9 @@ public class FinanceService {
 
     public void prepareComputerBudget(String id, long team) {
         if (repository.humanTeam(id, team)) return;
+        // Clubs imported only for cup access do not negotiate a national season budget.
+        // Their existing cash, contracts and payroll continue to be processed normally.
+        if (competitions.seasons(id, team).isEmpty()) return;
         var plan = ensurePlan(id, team);
         if (plan.approved()) return;
         var season = competitions

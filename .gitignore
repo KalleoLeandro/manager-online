@@ -8,6 +8,7 @@ data/
 docs/
 scripts/
 .tools/
+tools/
 database/*
 !database/init.db
 !database/Dockerfile

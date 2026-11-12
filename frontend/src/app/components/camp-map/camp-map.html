@@ -1,0 +1,56 @@
+<div class="map-frame">
+  <span class="map-label">DESTINOS DE PRÉ-TEMPORADA</span>
+  <svg viewBox="0 0 720 360" role="group" aria-label="Mapa de locais de concentração">
+    <defs>
+      <pattern id="camp-grid" width="60" height="60" patternUnits="userSpaceOnUse">
+        <path d="M60 0H0V60" fill="none" stroke="currentColor" stroke-width=".5" />
+      </pattern>
+    </defs>
+    <rect width="720" height="360" class="ocean" />
+    <rect width="720" height="360" fill="url(#camp-grid)" class="grid" />
+    <g class="land" aria-hidden="true">
+      <path
+        d="M47 72L80 51 119 46 142 65 163 63 177 86 201 90 224 112 208 128 201 147 185 151 171 143 160 154 148 146 132 128 114 115 92 115 75 100 54 97Z"
+      />
+      <path d="M168 151L185 154 198 170 216 178 226 191 215 204 200 191 190 177 177 171Z" />
+      <path
+        d="M224 189L247 184 275 203 298 210 308 228 294 255 281 266 271 291 253 315 242 301 241 274 229 255 225 230 214 209Z"
+      />
+      <path d="M263 26L293 20 311 35 300 61 278 73 258 48Z" />
+      <path
+        d="M339 105L350 84 369 75 379 56 397 49 410 64 398 78 410 94 426 100 429 113 407 121 391 113 371 122 356 117Z"
+      />
+      <path
+        d="M356 130L383 122 408 128 425 148 443 160 432 190 418 209 411 238 395 263 377 252 370 223 355 202 341 180 340 151Z"
+      />
+      <path
+        d="M409 70L448 51 484 42 530 45 559 36 605 52 648 58 670 77 652 101 625 108 609 125 591 137 576 169 561 164 546 145 528 148 514 178 503 172 489 144 471 132 451 139 432 120 415 110Z"
+      />
+      <path
+        d="M440 147L460 145 478 159 468 179 448 168Z M554 173L574 178 587 197 616 202 632 218 614 225 588 211 569 204Z"
+      />
+      <path
+        d="M606 239L639 227 661 239 671 262 660 283 634 288 613 275 590 270 590 251Z M687 279L695 288 682 307 673 305Z"
+      />
+    </g>
+    @for(v of venues();track v.key){
+    <g
+      role="button"
+      [attr.tabindex]="disabled()?-1:0"
+      [attr.aria-label]="v.name+', '+v.country"
+      [attr.aria-pressed]="selected()===v.key"
+      [class.selected]="selected()===v.key"
+      class="pin"
+      (click)="!disabled()&&choose.emit(v.key)"
+      (keydown.enter)="!disabled()&&choose.emit(v.key)"
+      (keydown.space)="$event.preventDefault();!disabled()&&choose.emit(v.key)"
+    >
+      <title>{{v.name}} · {{v.country}}</title>
+      <circle class="target" [attr.cx]="x(v)" [attr.cy]="y(v)" r="13" />
+      <circle class="halo" [attr.cx]="x(v)" [attr.cy]="y(v)" r="9" />
+      <circle [attr.cx]="x(v)" [attr.cy]="y(v)" r="4" />
+    </g>
+    }
+  </svg>
+  <p>Escolha um ponto no mapa ou um destino na lista.</p>
+</div>

@@ -1,0 +1,47 @@
+<section class="award-history">
+  <header>
+    <div>
+      <small>AS ESTRELAS DA LIGA</small>
+      <h2>Prêmios individuais</h2>
+      <p>Bola de Ouro, Chuteira de Ouro e artilharia de cada competição.</p>
+    </div>
+    <button type="button" (click)="load()">Atualizar</button>
+  </header>
+  <div class="filters">
+    <label
+      >Ano<select [ngModel]="year()" (ngModelChange)="year.set($event)">
+        <option value="">Todos</option>
+        @for(y of years();track y){
+        <option [value]="y">{{y}}</option>
+        }
+      </select></label
+    ><label
+      >Premiação<select [ngModel]="kind()" (ngModelChange)="kind.set($event)">
+        <option value="">Todas</option>
+        <option value="GOLDEN_BALL">Bola de Ouro</option>
+        <option value="GOLDEN_BOOT">Chuteira de Ouro</option>
+        <option value="TOP_SCORER">Artilharia</option>
+      </select></label
+    >
+  </div>
+  @if(error()){
+  <p role="alert">{{error()}}</p>
+  }@if(loading()){
+  <p role="status">Carregando as cerimônias…</p>
+  }
+  <div class="award-cards">
+    @for(award of visible();track award.id){
+    <article>
+      <app-trophy-image [trophy]="{id:award.trophyId,name:award.title}" />
+      <div>
+        <small>{{award.year}}</small>
+        <h3>{{award.title}}</h3>
+        <p>{{award.competition}}</p>
+        <button type="button" (click)="replay(award.id)">Assistir à cerimônia →</button>
+      </div>
+    </article>
+    }@empty{@if(!loading()){
+    <p>As premiações aparecem ao término das competições e na virada do ano.</p>
+    }}
+  </div>
+</section>

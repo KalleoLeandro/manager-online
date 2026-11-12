@@ -6,6 +6,7 @@
       <div class="identity-text"><p class="club-name">{{teamName() || 'Elenco do clube'}}</p><h2 id="player-detail-name">{{player().name}}</h2><p>{{positionName()}} <span>·</span> {{player().level}}</p><p>Posições: {{player().positions?.join(" / ")||player().position}} @if(player().positionsEstimated){<small>(estimadas pelos atributos)</small>}</p><div class="badges"><span>{{player().generated?'Jogador fictício':'Jogador real'}}</span>@if(starting()!==null){<span>{{starting()?'Time titular':'Reserva'}}</span>}</div></div>
       <div class="overall"><strong>{{player().ability}}</strong><span>HABILIDADE BASE / 99</span></div>
     </section>
+    @if(matchStats();as stats){<section class="match-performance" aria-label="Desempenho nesta partida"><h3>Nesta partida</h3><dl class="facts"><div><dt>Minutos</dt><dd>{{stats.minutes}}′</dd></div><div><dt>Gols</dt><dd>{{stats.goals}}</dd></div><div><dt>Assistências</dt><dd>{{stats.assists}}</dd></div><div><dt>Nota</dt><dd>{{stats.rating!=null?stats.rating.toFixed(1):'A partir de 5 minutos'}}</dd></div></dl>@if(stats.sentOff){<p>Expulso nesta partida.</p>}@if(stats.injured){<p>Lesionado nesta partida.</p>}</section>}
     <dl class="facts">
       <div><dt>Idade</dt><dd>{{player().age!==null?player().age+' anos':'Não informada'}}</dd></div>
       <div><dt>Nacionalidade</dt><dd>{{player().nationality || 'Não informada'}}</dd></div>
@@ -20,7 +21,7 @@
     @if(showComparison()){
     <section class="profile-section"><h3>No elenco</h3><div class="comparison"><div><span>Média de habilidade do elenco</span><strong>{{average()}} <small>/ 99</small></strong></div><div><span>Comparação com a média</span><strong>{{difference()>0?'+':''}}{{difference()}} <small>pontos</small></strong></div><div><span>Por habilidade na posição</span><strong>{{rank()}}º <small>de {{peers().length}}</small></strong></div></div><p>Comparação com os atletas deste elenco. Empates em habilidade compartilham a colocação.</p></section>
     }
-    <aside class="data-note">@if(player().generated){<p>Atleta fictício criado para completar o elenco. Nome e características foram gerados para o jogo.</p>}<p>Os atributos combinam estimativas do jogo e referências adaptadas, identificadas na ficha. Estatísticas de partidas, contratos e histórico de transferências ainda não estão disponíveis.</p></aside>
+    <aside class="data-note">@if(player().generated){<p>Atleta fictício criado para completar o elenco. Nome e características foram gerados para o jogo.</p>}<p>Os atributos combinam estimativas do jogo e referências adaptadas, identificadas na ficha. @if(matchStats()){A condição e o desempenho acompanham as atualizações desta partida.}@else{Estatísticas de partidas, contratos e histórico de transferências ainda não estão disponíveis.}</p></aside>
   </div>
   <footer><button type="button" (click)="close()">Voltar ao elenco</button></footer>
 </dialog>

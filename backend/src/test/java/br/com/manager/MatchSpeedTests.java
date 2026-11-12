@@ -8,6 +8,16 @@ import org.junit.jupiter.api.Test;
 class MatchSpeedTests {
 
     @Test
+    void startsPromptlyAtEverySpeedWithoutChangingSubsequentCadence() {
+        for (int speed : new int[] {50, 100, 200, 400}) {
+            assertThat(MatchSpeed.kickoffDelay(6000, speed)).isEqualTo(1000);
+        }
+        assertThat(MatchSpeed.kickoffDelay(1500, 400)).isEqualTo(375);
+        assertThat(MatchSpeed.kickoffDelay(250, 400)).isEqualTo(250);
+        assertThatThrownBy(() -> MatchSpeed.kickoffDelay(6000, 300)).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
     void changesOnlyTheWallClockCadenceAndPreservesMinimumDelay() {
         assertThat(MatchSpeed.delay(6000, 50)).isEqualTo(12000);
         assertThat(MatchSpeed.delay(6000, 100)).isEqualTo(6000);

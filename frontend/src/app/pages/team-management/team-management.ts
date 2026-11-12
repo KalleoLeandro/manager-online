@@ -1,3 +1,6 @@
+import { PlayerAwards } from '../../components/player-awards/player-awards';
+import { ClubTitlesPage } from '../club-titles/club-titles';
+import { StadiumBackground } from '../../components/stadium-background/stadium-background';
 import {LeagueExit} from '../../components/league-exit/league-exit';
 import {TournamentDraw} from '../../components/tournament-draw/tournament-draw';
 import {positionFamily} from '../../utils/player-positions';
@@ -41,7 +44,7 @@ import { clubTheme } from '../../utils/club-theme';
 import { formations, roles, suggestLineup } from '../../utils/formations';
 import { readLocal, writeLocal } from '../../utils/local-storage';
 
-@Component({selector:'app-team-management',providers:[SaveRealtimeService],imports:[LeagueExit,TournamentDraw,SeasonBudget,ClubFinancePage,TransferMarketPage,DayProgress,TeamStrategy,LocalPlayers,SeasonCalendarPage,MatchdayEntry,GameIcon,NationalChampionshipPage,ManagementCalendar,ManagerAvatar,CoachAnnouncement,PlayerSearchPage,TeamMessagesPage,JuniorTeamPage,ManagementSectionPage,LeagueTeamsPage,WorldCompetitionsPage,ClubCrest,FormsModule,CurrencyPipe,DecimalPipe,LiveStatus,TacticalBoard,ManagementRoster],templateUrl:'./team-management.html',styleUrl:'./team-management.css'})
+@Component({selector:'app-team-management',providers:[SaveRealtimeService],imports:[PlayerAwards,ClubTitlesPage,StadiumBackground,LeagueExit,TournamentDraw,SeasonBudget,ClubFinancePage,TransferMarketPage,DayProgress,TeamStrategy,LocalPlayers,SeasonCalendarPage,MatchdayEntry,GameIcon,NationalChampionshipPage,ManagementCalendar,ManagerAvatar,CoachAnnouncement,PlayerSearchPage,TeamMessagesPage,JuniorTeamPage,ManagementSectionPage,LeagueTeamsPage,WorldCompetitionsPage,ClubCrest,FormsModule,CurrencyPipe,DecimalPipe,LiveStatus,TacticalBoard,ManagementRoster],templateUrl:'./team-management.html',styleUrl:'./team-management.css'})
 export class TeamManagementPage implements OnInit {
   private readonly api=inject(ManagementService); private readonly saves=inject(SaveService);
   private readonly auth=inject(AuthService); private readonly destroy=inject(DestroyRef);

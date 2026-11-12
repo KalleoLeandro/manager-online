@@ -1,3 +1,10 @@
+import { PlayerAwards } from '../../components/player-awards/player-awards';
+import { MatchIncidentsService } from '../../services/match-incidents.service';
+import { MatchIncident } from '../../components/match-incident/match-incident';
+import { MatchIncident as IncidentDetails } from '../../utils/match-incidents';
+import { StadiumBackground } from '../../components/stadium-background/stadium-background';
+import { MatchPlayerDetails } from '../../components/match-player-details/match-player-details';
+import { MatchPlayerProfilesService } from '../../services/match-player-profiles.service';
 import { DayProgressService } from '../../services/day-progress.service';
 import {LeagueExit} from '../../components/league-exit/league-exit';
 import {narrationRoster,narrationParts} from '../../utils/match-narration';
@@ -26,13 +33,20 @@ import { GameIcon } from '../../components/game-icon/game-icon';
 import { MatchAudioService } from '../../services/match-audio.service';
 import { VarReview } from '../../components/var-review/var-review';
 
-@Component({selector:'app-matchday',providers:[SaveRealtimeService],imports:[LeagueExit,MatchOptions,MatchTouchline,MatchPanel,LocalPlayers,VarReview,GameIcon,GoalCelebration,FormsModule,ClubCrest,LiveStatus,MatchStatistics],templateUrl:'./matchday.html',styleUrl:'./matchday.css'})
+@Component({selector:'app-matchday',providers:[SaveRealtimeService,MatchPlayerProfilesService],imports:[PlayerAwards,MatchIncident,StadiumBackground,MatchPlayerDetails,LeagueExit,MatchOptions,MatchTouchline,MatchPanel,LocalPlayers,VarReview,GameIcon,GoalCelebration,FormsModule,ClubCrest,LiveStatus,MatchStatistics],templateUrl:'./matchday.html',styleUrl:'./matchday.css'})
 export class MatchdayPage implements OnInit {
  private readonly api=inject(MatchdayService);private readonly saves=inject(SaveService);private readonly destroy=inject(DestroyRef);
  readonly localRoom=computed(()=>this.realtime.room()||this.saves.access(this.id)?.room||null);
  readonly hasLocalControl=computed(()=>!!this.saves.localOwner(this.id));
  readonly realtime=inject(SaveRealtimeService);readonly id=currentPath().split('/')[1]||'';
  readonly layout=new MatchPanelLayout();
+ readonly profileSelection=signal<{fixtureId:number;teamId:number;playerId:number}|null>(null);
+ readonly profileTeam=computed(()=>{const selected=this.profileSelection(),match=this.match();return selected&&match?.fixtureId===selected.fixtureId?(match.home.id===selected.teamId?match.home:match.away.id===selected.teamId?match.away:null):null;});
+ showPlayer(side:string,playerId:number):void{const match=this.match();if(!match)return;this.profileSelection.set({fixtureId:match.fixtureId,teamId:side==='away'?match.away.id:match.home.id,playerId});}
+ private readonly incidentTracker=inject(MatchIncidentsService).forLeague(this.id);
+ readonly incidents=signal<IncidentDetails[]>([]);
+ readonly incident=computed(()=>this.incidents().find(e=>e.fixtureId===this.match()?.fixtureId)||null);
+ finishIncident(key:string):void{this.incidents.update(items=>items.filter(e=>e.key!==key));this.refreshes.next();}
  readonly rightTab=signal<'home'|'away'|'stats'|'scores'>('home');
  readonly eventFilter=signal('ALL');
  togglePanel(id:MatchPanelId):void{this.layout.toggle(id);if(this.layout.visible(id)){if(id==='stats'||id==='scores')this.rightTab.set(id);if(id==='lineups'&&['stats','scores'].includes(this.rightTab()))this.rightTab.set('home');}}
@@ -52,7 +66,7 @@ export class MatchdayPage implements OnInit {
  finishGoal(key:string):void{this.completedGoal.set(key);this.refreshes.next();}
  refreshReview():void{this.refreshes.next();}
  private readonly narrationRoster=computed(()=>{const m=this.match();return m?narrationRoster(m.home,m.away):null;});
- readonly events=computed(()=>{const list=this.match()?.events||[],goal=this.goal(),review=this.match()?.varReview;return [...list].reverse().filter(e=>(!review||e.sequence<=review.goalSequence+1||e.type==='VAR_DECISION')&&(!goal||e.sequence<=goal.sequence)&&this.acceptEvent(e.type)&&(!this.importantOnly()||!['PASS_SEQUENCE','INTERCEPTION','THROW_IN','FOUL','SHOT_OFF','OFFSIDE','SAVE'].includes(e.type))).map(event=>({...event,parts:this.narrationRoster()?narrationParts(event,this.narrationRoster()!):[{text:event.text}]}));});
+ readonly events=computed(()=>{const list=this.match()?.events||[],goal=this.goal(),review=this.match()?.varReview;return [...list].reverse().filter(e=>(!review||e.sequence<=review.goalSequence+1||e.type==='VAR_DECISION')&&(!goal||e.sequence<=goal.sequence)&&this.acceptEvent(e.type)&&(!this.importantOnly()||!['PASS_SEQUENCE','INTERCEPTION','PASS_MISSED','THROW_IN','FOUL','SHOT_OFF','OFFSIDE','SAVE'].includes(e.type))).map(event=>({...event,parts:this.narrationRoster()?narrationParts(event,this.narrationRoster()!):[{text:event.text}]}));});
  readonly clock=matchClock;readonly dateLabel=dateLabel;
  private refreshes=new Subject<void>();private fetching=false;private again=false;
  private readonly audio=inject(MatchAudioService);
@@ -76,12 +90,13 @@ export class MatchdayPage implements OnInit {
    this.data.set(d);
    const ownPending=d.matches.find(game=>(game.homeId===d.ownTeamId||game.awayId===d.ownTeamId)&&game.status==='PAUSED');
    if(ownPending&&d.selected?.fixtureId!==ownPending.fixtureId){this.selected.set(ownPending.fixtureId);this.again=true;return;}
-   if(d.selected?.status==='PAUSED'&&(d.selected.canResume||d.selected.awaitingCoachDecision&&d.selected.pendingCoachTeams.includes(d.ownTeamId))&&!d.selected.varReview&&d.selected.goalCelebrationRemainingMillis<=0){location.hash=`match-tactics/${this.id}/${d.selected.fixtureId}`;}
+   if(d.selected){const fresh=this.incidentTracker.collect(d.selected);if(fresh.length)this.incidents.update(items=>[...items,...fresh]);}
+   if(!this.incident()&&d.selected?.status==='PAUSED'&&(d.selected.canResume||d.selected.awaitingCoachDecision&&d.selected.pendingCoachTeams.includes(d.ownTeamId))&&!d.selected.varReview&&d.selected.goalCelebrationRemainingMillis<=0){location.hash=`match-tactics/${this.id}/${d.selected.fixtureId}`;}
 
   },error:e=>this.error.set(e.error?.message||'Não foi possível atualizar a partida.')});
  }
  changeSpeed(percent:number):void{if(this.speedBusy()||!(this.data()?.canChangeSpeed||this.data()?.localMultiplayer&&this.saves.localOwner(this.id)))return;this.speedBusy.set(true);this.error.set('');const selected=this.match()?.fixtureId;this.api.speed(this.id,percent,selected).pipe(finalize(()=>this.speedBusy.set(false)),takeUntilDestroyed(this.destroy)).subscribe({next:data=>{if(this.match()?.fixtureId===selected)this.data.set(data);else this.refreshes.next();},error:e=>{this.error.set(e.error?.message||'Não foi possível alterar a velocidade.');this.refreshes.next();}});}
- select(fixture:number):void{this.selected.set(fixture);this.error.set('');this.load();}
+ select(fixture:number):void{this.incidents.set([]);this.profileSelection.set(null);this.selected.set(fixture);this.error.set('');this.load();}
  start():void{if(this.busy()||!this.gameDay())return;this.busy.set(true);this.api.start(this.id).pipe(finalize(()=>this.busy.set(false)),takeUntilDestroyed(this.destroy)).subscribe({next:d=>this.data.set(d),error:e=>this.error.set(e.error?.message||'Não foi possível iniciar a jornada.')});}
  openTactics():void{const m=this.match();if(!m||!this.own()||this.busy())return;this.error.set('');this.busy.set(true);this.api.action(this.id,m.fixtureId,{type:'OPEN_TACTICS',revision:m.revision}).pipe(finalize(()=>this.busy.set(false)),takeUntilDestroyed(this.destroy)).subscribe({next:()=>location.hash=`match-tactics/${this.id}/${m.fixtureId}`,error:e=>{this.error.set(e.error?.message||'Não foi possível abrir os ajustes.');this.refreshes.next();}});}
  command(type:'RESUME'|TouchlineCommand):void{const m=this.match();if(!m||this.busy())return;this.error.set('');this.busy.set(true);this.api.action(this.id,m.fixtureId,{type,revision:m.revision}).pipe(finalize(()=>this.busy.set(false)),takeUntilDestroyed(this.destroy)).subscribe({next:d=>{this.data.set(d);this.refreshes.next();},error:e=>{this.error.set(e.error?.message||'Não foi possível confirmar os ajustes.');this.refreshes.next();}});}

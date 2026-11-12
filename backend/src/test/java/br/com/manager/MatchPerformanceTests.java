@@ -8,6 +8,74 @@ import org.junit.jupiter.api.Test;
 class MatchPerformanceTests {
 
     @Test
+    void alreadyRunningVersionFourMatchesKeepTheirExactOutcome() {
+        var m = MatchEngineTests.match(546, 75, 75);
+        m.engineVersion = 4;
+        MatchEngineTests.run(m);
+        assertThat(m.home.goals).isEqualTo(2);
+        assertThat(m.away.goals).isZero();
+        assertThat(m.home.stats.shots).isEqualTo(14);
+        assertThat(m.away.stats.shots).isEqualTo(9);
+        assertThat(m.home.stats.passesCompleted).isEqualTo(405);
+        assertThat(m.away.stats.passesCompleted).isEqualTo(382);
+        assertThat(m.events).hasSize(202);
+        assertThat(m.minute).isEqualTo(93);
+    }
+
+    @Test
+    void everySupportedFormationRecognizesItsOwnRolesIncludingWingbacks() {
+        for (var formation : FormationRules.ROLES.entrySet()) {
+            var team = MatchEngineTests.team(1, 80);
+            team.formation = formation.getKey();
+            for (int slot = 0; slot < 11; slot++) {
+                var p = team.players.get(slot);
+                String role = formation.getValue().get(slot);
+                p.slot = slot;
+                p.naturalPosition = role;
+                p.preferredPositions = java.util.List.of(role);
+                p.attributes.put("consistency", 100);
+                PlayerPositionRules.assign(p, role);
+            }
+            var sectors = MatchPerformance.sectors(team, false);
+            var effect = MatchFormationEffects.of(team.formation);
+            assertThat(sectors.control())
+                .as(team.formation)
+                .isCloseTo(80 * effect.control(), within(.001));
+            assertThat(sectors.defence())
+                .as(team.formation)
+                .isCloseTo(80 * effect.defence(), within(.001));
+        }
+    }
+
+    @Test
+    void inaccuratePassesAreNotAllCountedAsInterceptionsAndCountersAgree() {
+        long missed = 0,
+            intercepted = 0;
+        for (int seed = 0; seed < 100; seed++) {
+            var m = MatchEngineTests.match(82391L + seed * 997L, 75, 75);
+            MatchEngineTests.run(m);
+            for (var team : java.util.List.of(m.home, m.away)) {
+                missed += team.stats.passesMissed;
+                intercepted += team.stats.interceptions;
+                assertThat(team.stats.interceptions).isEqualTo(
+                    team.players
+                        .stream()
+                        .mapToInt(p -> p.interceptions)
+                        .sum()
+                );
+                assertThat(team.stats.passesMissed).isEqualTo(
+                    team.players
+                        .stream()
+                        .mapToInt(p -> p.passesMissed)
+                        .sum()
+                );
+            }
+        }
+        assertThat(intercepted / (double) missed).isBetween(.13, .23);
+        assertThat(intercepted / 100.).isBetween(15., 55.);
+    }
+
+    @Test
     void alreadyRunningVersionTwoMatchesKeepTheirExactOutcome() {
         var m = MatchEngineTests.match(546, 75, 75);
         m.engineVersion = 2;

@@ -7,7 +7,7 @@ import java.util.*;
 /** Own probabilistic text engine. A step is a game minute, independent of connected browsers. */
 public final class MatchEngine {
 
-    public static final int CURRENT_VERSION = 4;
+    public static final int CURRENT_VERSION = 5;
 
     private MatchEngine() {}
 
@@ -134,8 +134,8 @@ public final class MatchEngine {
             m.penaltyTeam = null;
         }
         boolean modern = m.engineVersion >= 2;
-        var homeSectors = modern ? MatchPerformance.sectors(m.home, m.engineVersion >= 3) : null;
-        var awaySectors = modern ? MatchPerformance.sectors(m.away, m.engineVersion >= 3) : null;
+        var homeSectors = modern ? MatchPerformance.sectors(m.home, m.engineVersion >= 3, m.engineVersion >= 5) : null;
+        var awaySectors = modern ? MatchPerformance.sectors(m.away, m.engineVersion >= 3, m.engineVersion >= 5) : null;
         int homeStrengthCount = active(m.home).size(),
             awayStrengthCount = active(m.away).size();
         for (
@@ -151,14 +151,14 @@ public final class MatchEngine {
             // Condition changes once per minute; only dismissals/injuries invalidate a sector inside it.
             if (modern && homeStrengthCount != active(m.home).size()) {
                 homeStrengthCount = active(m.home).size();
-                homeSectors = MatchPerformance.sectors(m.home, m.engineVersion >= 3);
+                homeSectors = MatchPerformance.sectors(m.home, m.engineVersion >= 3, m.engineVersion >= 5);
             }
             if (modern && awayStrengthCount != active(m.away).size()) {
                 awayStrengthCount = active(m.away).size();
-                awaySectors = MatchPerformance.sectors(m.away, m.engineVersion >= 3);
+                awaySectors = MatchPerformance.sectors(m.away, m.engineVersion >= 3, m.engineVersion >= 5);
             }
             double possessionChance = modern
-                ? MatchPerformance.homePossession(homeSectors, awaySectors, m.neutralVenue)
+                ? MatchPerformance.homePossession(homeSectors, awaySectors, m.neutralVenue, m.engineVersion >= 5)
                 : controlHome / (controlHome + controlAway);
             Team attack = r.nextDouble() < possessionChance ? m.home : m.away;
             Team defend = attack == m.home ? m.away : m.home;
@@ -186,6 +186,7 @@ public final class MatchEngine {
             );
             int completed = 0;
             boolean possessionLost = false;
+            boolean intercepted = false;
             Player firstPasser = carrier;
             var narration = new Random(m.seed ^ (m.minute * 1009L + possession * 7919L + m.period * 131L));
             for (int pass = 0, count = 1 + r.nextInt(3); pass < count; pass++) {
@@ -202,8 +203,11 @@ public final class MatchEngine {
                 } else {
                     attack.stats.passesMissed++;
                     carrier.passesMissed++;
-                    defend.stats.interceptions++;
-                    marker.interceptions++;
+                    intercepted = m.engineVersion < 5 || narration.nextDouble() < .18;
+                    if (intercepted) {
+                        defend.stats.interceptions++;
+                        marker.interceptions++;
+                    }
                     possessionLost = true;
                     break;
                 }
@@ -218,16 +222,23 @@ public final class MatchEngine {
             );
             else if (possession == 0 && completed == 0) event(
                 m,
-                "INTERCEPTION",
+                intercepted ? "INTERCEPTION" : "PASS_MISSED",
                 defend,
                 marker,
                 carrier,
-                marker.name +
-                    " antecipa a intenção de " +
-                    carrier.name +
-                    ", corta a linha de passe e recupera a posse para " +
-                    defend.name +
-                    "."
+                !intercepted
+                    ? carrier.name +
+                          " erra a tentativa de passe. A bola fica com " +
+                          marker.name +
+                          ", que reinicia a jogada de " +
+                          defend.name +
+                          "."
+                    : marker.name +
+                          " antecipa a intenção de " +
+                          carrier.name +
+                          ", corta a linha de passe e recupera a posse para " +
+                          defend.name +
+                          "."
             );
             double incident = r.nextDouble();
             double trap =
@@ -272,7 +283,8 @@ public final class MatchEngine {
                     attack,
                     defend,
                     attack == m.home,
-                    m.neutralVenue
+                    m.neutralVenue,
+                    m.engineVersion >= 5
                 );
                 else {
                     double creation =
@@ -293,7 +305,10 @@ public final class MatchEngine {
                     chance = clamp(.043 * Math.exp((creation - prevention) / 160) * posture * exposure, .014, .09);
                 }
                 if (r.nextDouble() < chance) shot(m, attack, defend, r, false, false, carrier);
-                else if (r.nextDouble() < .09) {defend.stats.tackles++;marker.tackles++;}
+                else if (r.nextDouble() < .09) {
+                    defend.stats.tackles++;
+                    marker.tackles++;
+                }
             }
         }
         aiChanges(m, m.home, r);
@@ -565,8 +580,8 @@ public final class MatchEngine {
         if (m.engineVersion >= 2) xg = MatchPerformance.expectedGoals(
             precision,
             keeperSkill,
-            MatchPerformance.sectors(attack, m.engineVersion >= 3),
-            MatchPerformance.sectors(defend, m.engineVersion >= 3),
+            MatchPerformance.sectors(attack, m.engineVersion >= 3, m.engineVersion >= 5),
+            MatchPerformance.sectors(defend, m.engineVersion >= 3, m.engineVersion >= 5),
             corner,
             freeKick,
             longShot
@@ -605,7 +620,8 @@ public final class MatchEngine {
             }
         } else if (r.nextDouble() < .35 && !corner) {
             defend.stats.blockedShots++;
-            var blockers=active(defend);if(!blockers.isEmpty())blockers.get(Math.floorMod(m.minute+shooter.id,blockers.size())).blockedShots++;
+            var blockers = active(defend);
+            if (!blockers.isEmpty()) blockers.get(Math.floorMod(m.minute + shooter.id, blockers.size())).blockedShots++;
             event(
                 m,
                 "BLOCKED_SHOT",
@@ -711,7 +727,7 @@ public final class MatchEngine {
 
     private static void goal(MatchStateDto m, Team team, Player scorer, Player assist, double xg, boolean penalty) {
         team.goals++;
-        active(team==m.home?m.away:m.home).forEach(p->p.goalsAgainst++);
+        active(team == m.home ? m.away : m.home).forEach(p -> p.goalsAgainst++);
         scorer.goals++;
         if (assist != null && assist.id == scorer.id) assist = null;
         if (assist != null) assist.assists++;

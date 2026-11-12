@@ -1,0 +1,29 @@
+<section>
+  <header>
+    <div>
+      <small>CONQUISTAS DESTA LIGA</small>
+      <h2>Sala de troféus</h2>
+      <p>As copas conquistadas pelo clube, registradas temporada após temporada.</p>
+    </div>
+    <button type="button" (click)="load()">Atualizar</button>
+  </header>
+  @if(error()){
+  <p role="alert">{{error()}}</p>
+  }@if(loading()){
+  <p role="status">Carregando conquistas…</p>
+  }
+  <div class="titles">
+    @for(title of titles();track title.editionId+':'+title.trophyId){
+    <article>
+      <app-trophy-image [trophy]="{id:title.trophyId,name:title.competition}" />
+      <h3>{{title.competition}}</h3>
+      <b>{{title.label}}</b>
+      <p>{{title.stage}}</p>
+      <time>{{label(title.date,{day:'2-digit',month:'long',year:'numeric'})}}</time>
+    </article>
+    }@empty{ @if(!loading()&&!error()){
+    <p>O clube ainda não conquistou uma copa nesta liga. Os troféus aparecerão aqui após as decisões.</p>
+    }}
+  </div>
+</section>
+<app-player-award-history [leagueId]="leagueId()" [revision]="revision()"/>

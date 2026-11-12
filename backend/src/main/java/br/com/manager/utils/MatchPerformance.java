@@ -24,6 +24,10 @@ public final class MatchPerformance {
     }
 
     public static Sectors sectors(Team team, boolean applyTactics) {
+        return sectors(team, applyTactics, true);
+    }
+
+    public static Sectors sectors(Team team, boolean applyTactics, boolean calibrated) {
         var field = MatchEngine.active(team);
         double controlMid = line(field, "MEI", "short_passing", "first_touch", "vision", "teamwork");
         double controlDef = line(field, "DEF", "short_passing", "first_touch", "decisions");
@@ -40,7 +44,7 @@ public final class MatchPerformance {
             .average()
             .orElse(12);
         double numbers = Math.min(1, field.size() / 11.0);
-        double shape = alignment(field, team.formation);
+        double shape = alignment(field, team.formation, calibrated);
         var formation = MatchFormationEffects.of(team.formation);
         var tactics = applyTactics
             ? MatchTacticalEffects.evaluate(team)
@@ -83,7 +87,7 @@ public final class MatchPerformance {
             .orElse(12);
     }
 
-    private static double alignment(List<Player> field, String formation) {
+    private static double alignment(List<Player> field, String formation, boolean calibrated) {
         var expected = switch (formation) {
             case "4-4-2" -> new int[] { 4, 4, 2 };
             case "3-5-2" -> new int[] { 3, 5, 2 };
@@ -92,6 +96,16 @@ public final class MatchPerformance {
         };
         int mismatch = 0;
         var roles = List.of("DEF", "MEI", "ATA");
+        if (calibrated) {
+            var slots = FormationRules.ROLES.getOrDefault(formation, FormationRules.ROLES.get("4-3-3"));
+            for (int i = 0; i < roles.size(); i++) {
+                String role = roles.get(i);
+                expected[i] = (int) slots
+                    .stream()
+                    .filter(r -> FormationRules.family(r).equals(role))
+                    .count();
+            }
+        }
         for (int i = 0; i < roles.size(); i++) {
             String role = roles.get(i);
             mismatch += Math.abs(
@@ -109,7 +123,30 @@ public final class MatchPerformance {
     }
 
     public static double homePossession(Sectors home, Sectors away, boolean neutral) {
-        return clamp(1 / (1 + Math.exp(-(home.control() - away.control() + (neutral ? 0 : 1.8)) / 45)), .22, .78);
+        return homePossession(home, away, neutral, false);
+    }
+
+    public static double homePossession(Sectors home, Sectors away, boolean neutral, boolean calibrated) {
+        return clamp(
+            1 / (1 + Math.exp(-(home.control() - away.control() + (neutral ? 0 : 1.8)) / (calibrated ? 40 : 45))),
+            .22,
+            .78
+        );
+    }
+
+    public static double shotChance(
+        Sectors attack,
+        Sectors defend,
+        Team attacking,
+        Team defending,
+        boolean home,
+        boolean neutral,
+        boolean calibrated
+    ) {
+        double chance = shotChance(attack, defend, attacking, defending, home, neutral);
+        if (!calibrated) return chance;
+        double superiority = (attack.creation() - defend.defence()) / 180 + (attack.quality() - defend.quality()) / 220;
+        return clamp(chance * Math.exp(clamp(superiority, -.3, .3)), .012, .085);
     }
 
     public static double shotChance(

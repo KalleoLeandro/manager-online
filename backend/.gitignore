@@ -4,6 +4,7 @@
 *.trace.db
 *.lock.db
 *.log
+/tools/
 .env
 .idea/
 .settings/
@@ -21,3 +22,6 @@
 /src/main/resources/res/crests/*
 
 /src/main/resources/res/trophies/*
+
+# Stadium photographs and attribution manifests are local assets, named by club ID.
+/src/main/resources/res/stadiums/*

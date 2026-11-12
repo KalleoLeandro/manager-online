@@ -13,4 +13,9 @@ public final class MatchSpeed {
         if (!valid(percent)) throw new IllegalArgumentException("Unsupported speed");
         return Math.max(250, Math.round((millis * 100.0) / percent));
     }
+
+    /** Kick-off should not wait for the reading cadence of subsequent match events. */
+    public static long kickoffDelay(long millis, int percent) {
+        return Math.min(1000, delay(millis, percent));
+    }
 }

@@ -3,7 +3,7 @@ import { LocalPlayers } from '../../components/local-players/local-players';
 import { Component, DestroyRef, computed, effect, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize } from 'rxjs';
-import { SaveService } from '../../services/save.service';
+import { SaveService, Room } from '../../services/save.service';
 import { SaveRealtimeService } from '../../services/save-realtime.service';
 import { presenceLabel } from '../../utils/presence-label';
 import { ClubCrest } from '../../components/club-crest/club-crest';
@@ -19,7 +19,8 @@ export class Lobby implements OnInit {
   readonly id = currentPath().split('/')[1] || '';
   readonly access = this.api.access(this.id);
   readonly realtime = inject(SaveRealtimeService);
-  readonly room = this.realtime.room;
+  readonly initialRoom=signal<Room|null>(null);
+  readonly room = computed(()=>this.realtime.room()||this.initialRoom());
   readonly guests = computed(() => this.realtime.presence().filter(p => !p.memberId));
   presenceLabel = presenceLabel;
   presenceFor(id: string) { return this.realtime.presence().find(p => p.memberId === id); }
@@ -30,6 +31,7 @@ export class Lobby implements OnInit {
   readonly emptySlots = computed(() => Array.from({ length: Math.max(0,(this.room()?.capacity || 0)-(this.room()?.members.length || 0)) }));
   ngOnInit(): void {
     if (!this.access) { this.error.set('Este navegador não possui acesso a essa liga. Entre usando o código de convite.'); return; }
+    this.api.room(this.id).pipe(takeUntilDestroyed(this.destroy)).subscribe({next:room=>this.initialRoom.set(room),error:e=>this.error.set(e.error?.message||'Não foi possível carregar a liga. Atualize a página para tentar novamente.')});
     this.realtime.connect({ saveId: this.id, accessToken: this.access.accessToken, activity: 'LOBBY' });
   }
   ready(): void {

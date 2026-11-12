@@ -67,7 +67,7 @@ public class WorldCompetitionRepository {
             FROM national_fixtures f JOIN national_seasons ns ON ns.id=f.season_id
             JOIN save_teams h ON h.save_id=f.save_id AND h.team_id=f.home_team_id
             JOIN save_teams a ON a.save_id=f.save_id AND a.team_id=f.away_team_id
-            WHERE f.save_id=:id AND f.status='SCHEDULED' AND ns.tournament_id IS NULL AND f.match_date<=:date
+            WHERE f.save_id=:id AND f.status='SCHEDULED' AND ns.tournament_id IS NULL AND ns.format<>'FRIENDLY' AND f.match_date<=:date
             AND NOT EXISTS(SELECT 1 FROM save_members m WHERE m.save_id=f.save_id
                 AND (m.team_id=f.home_team_id OR m.team_id=f.away_team_id))
             AND NOT EXISTS(SELECT 1 FROM match_sessions ms WHERE ms.fixture_id=f.id)
@@ -101,7 +101,7 @@ public class WorldCompetitionRepository {
 
     public List<Competition> competitions(String id) {
         return db.query(
-            "SELECT s.*,COALESCE(SUM(CASE WHEN f.status='PLAYED' THEN 1 ELSE 0 END),0) AS played,COALESCE(SUM(CASE WHEN f.status='SCHEDULED' THEN 1 ELSE 0 END),0) AS scheduled FROM national_seasons s LEFT JOIN national_fixtures f ON f.season_id=s.id WHERE s.save_id=:id AND s.tournament_id IS NULL GROUP BY s.id ORDER BY s.country,s.division,s.season_year DESC",
+            "SELECT s.*,COALESCE(SUM(CASE WHEN f.status='PLAYED' THEN 1 ELSE 0 END),0) AS played,COALESCE(SUM(CASE WHEN f.status='SCHEDULED' THEN 1 ELSE 0 END),0) AS scheduled FROM national_seasons s LEFT JOIN national_fixtures f ON f.season_id=s.id WHERE s.save_id=:id AND s.tournament_id IS NULL AND s.format<>'FRIENDLY' GROUP BY s.id ORDER BY s.country,s.division,s.season_year DESC",
             new MapSqlParameterSource("id", id),
             COMPETITION
         );

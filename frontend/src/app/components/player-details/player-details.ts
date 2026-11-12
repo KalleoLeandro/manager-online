@@ -14,6 +14,7 @@ export class PlayerDetails implements AfterViewInit {
   readonly squad=input.required<PlayerProfile[]>();
   readonly teamName=input('');
   readonly starting=input<boolean|null>(null);readonly assignedPosition=input<string|null>(null);readonly positionFactor=computed(()=>this.assignedPosition()?positionFit(this.player(),this.assignedPosition()!):1);readonly positionPercent=computed(()=>Math.round(this.positionFactor()*100));
+  readonly matchStats=input<{minutes:number;goals:number;assists:number;rating?:number|null;sentOff:boolean;injured:boolean}|null>(null);
   readonly showComparison=input(true);
   readonly closed=output<void>();
   private readonly dialog=viewChild.required<ElementRef<HTMLDialogElement>>('dialog');

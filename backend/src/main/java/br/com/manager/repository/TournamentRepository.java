@@ -1,8 +1,8 @@
 package br.com.manager.repository;
 
 import br.com.manager.models.dto.TournamentDtos.*;
-import br.com.manager.utils.TournamentRulebooks.*;
 import br.com.manager.utils.NationalLeagueDraw;
+import br.com.manager.utils.TournamentRulebooks.*;
 import java.time.LocalDate;
 import java.util.*;
 import org.springframework.jdbc.core.RowMapper;
@@ -62,13 +62,91 @@ public class TournamentRepository {
         );
     }
 
+    public List<Entrant> latestSeeds(String id, String key, int year) {
+        var previous = db.queryForObject(
+            "SELECT COALESCE(MAX(CASE WHEN season_year<=:year THEN season_year END),MIN(season_year)) FROM tournament_entries WHERE competition_key=:key",
+            new MapSqlParameterSource("key", key).addValue("year", year),
+            Integer.class
+        );
+        return previous == null ? List.of() : seeds(id, key, previous);
+    }
+
+    public void addTeams(String id, long edition, List<Entrant> teams) {
+        db.batchUpdate(
+            "INSERT INTO tournament_teams(save_id,edition_id,team_id,entry_stage,seed_rank,association,region) SELECT :id,:edition,:team,:stage,:rank,:association,:region WHERE NOT EXISTS(SELECT 1 FROM tournament_teams WHERE edition_id=:edition AND team_id=:team)",
+            teams
+                .stream()
+                .map(t ->
+                    new MapSqlParameterSource("id", id)
+                        .addValue("edition", edition)
+                        .addValue("team", t.id())
+                        .addValue("stage", t.stage())
+                        .addValue("rank", t.rank())
+                        .addValue("association", t.association())
+                        .addValue("region", t.region())
+                )
+                .toArray(MapSqlParameterSource[]::new)
+        );
+    }
+
+    public void award(String id, long edition, int stage, long team, int trophy, LocalDate date) {
+        db.update(
+            "INSERT INTO tournament_awards(save_id,edition_id,stage_index,team_id,trophy_id,awarded_date) SELECT :id,:edition,:stage,:team,:trophy,:date WHERE NOT EXISTS(SELECT 1 FROM tournament_awards WHERE edition_id=:edition AND stage_index=:stage)",
+            new MapSqlParameterSource("id", id)
+                .addValue("edition", edition)
+                .addValue("stage", stage)
+                .addValue("team", team)
+                .addValue("trophy", trophy)
+                .addValue("date", date)
+        );
+    }
+
+    public List<Title> awards(String id, long team) {
+        return db.query(
+            "SELECT e.id,e.name,e.season_year,e.label,a.stage_index,a.trophy_id,a.awarded_date,e.rulebook FROM tournament_awards a JOIN tournament_editions e ON e.id=a.edition_id AND e.save_id=a.save_id WHERE a.save_id=:id AND a.team_id=:team ORDER BY a.awarded_date DESC,e.name",
+            new MapSqlParameterSource("id", id).addValue("team", team),
+            (r, n) ->
+                new Title(
+                    r.getLong(1),
+                    r.getString(2),
+                    r.getInt(3),
+                    r.getString(4),
+                    json.readValue(r.getString(8), Rulebook.class).stages().get(r.getInt(5)).label(),
+                    r.getInt(6),
+                    r.getObject(7, LocalDate.class)
+                )
+        );
+    }
+
+    public void fairPlay(String id, long edition, long fixture, long team, int points, boolean estimated) {
+        db.update(
+            "INSERT INTO tournament_fair_play(save_id,edition_id,fixture_id,team_id,points,estimated) SELECT :id,:edition,:fixture,:team,:points,:estimated WHERE NOT EXISTS(SELECT 1 FROM tournament_fair_play WHERE fixture_id=:fixture AND team_id=:team)",
+            new MapSqlParameterSource("id", id)
+                .addValue("edition", edition)
+                .addValue("fixture", fixture)
+                .addValue("team", team)
+                .addValue("points", points)
+                .addValue("estimated", estimated)
+        );
+    }
+
+    public Map<Long, Integer> fairPlay(long edition) {
+        var result = new HashMap<Long, Integer>();
+        db.query(
+            "SELECT team_id,SUM(points) FROM tournament_fair_play WHERE edition_id=:edition GROUP BY team_id",
+            new MapSqlParameterSource("edition", edition),
+            (r, n) -> Map.entry(r.getLong(1), r.getInt(2))
+        ).forEach(e -> result.put(e.getKey(), e.getValue()));
+        return result;
+    }
+
     public Edition create(String id, Rulebook rules, List<Entrant> teams) {
         var p = new MapSqlParameterSource("id", id)
             .addValue("key", rules.key())
             .addValue("year", rules.startYear())
             .addValue(
                 "label",
-                rules.country().equals("Brasil")
+                !List.of("Inglaterra", "Espanha", "Itália", "França", "Alemanha", "Europa").contains(rules.country())
                     ? String.valueOf(rules.startYear())
                     : rules.startYear() + "/" + (rules.startYear() + 1)
             )
@@ -135,7 +213,7 @@ public class TournamentRepository {
         );
     }
 
-    public long createStage(String id, Edition edition, int index, List<Tie> ties) {
+    public long createStage(String id, Edition edition, int index, List<Tie> ties, List<LocalDate> matchDates) {
         var stage = edition.rules().stages().get(index);
         long virtualLeague = -(edition.id() * 1000 + index + 1);
         var p = new MapSqlParameterSource("id", id)
@@ -146,8 +224,8 @@ public class TournamentRepository {
             .addValue("country", edition.country())
             .addValue("teams", ties.size() * 2)
             .addValue("rounds", stage.legs())
-            .addValue("first", stage.firstDate())
-            .addValue("last", stage.secondDate() == null ? stage.firstDate().plusDays(1) : stage.secondDate())
+            .addValue("first", matchDates.stream().min(LocalDate::compareTo).orElseThrow())
+            .addValue("last", matchDates.stream().max(LocalDate::compareTo).orElseThrow().plusDays(1))
             .addValue("seed", virtualLeague)
             .addValue("edition", edition.id())
             .addValue("stage", index);
@@ -182,7 +260,7 @@ public class TournamentRepository {
                 new MapSqlParameterSource("id", id)
                     .addValue("season", season)
                     .addValue("round", leg)
-                    .addValue("date", leg == 1 ? stage.firstDate() : stage.secondDate())
+                    .addValue("date", matchDates.get(fixtures.size()))
                     .addValue("home", leg == 1 ? tie.home() : tie.away())
                     .addValue("away", leg == 1 ? tie.away() : tie.home())
                     .addValue("tie", tie.number())
@@ -230,26 +308,107 @@ public class TournamentRepository {
         );
     }
 
-    public void advanceTeam(long edition,int stage,long team,int seed,String group){
-        var p=new MapSqlParameterSource("edition",edition).addValue("stage",stage).addValue("team",team).addValue("seed",seed).addValue("group",group);
-        db.update("INSERT INTO tournament_advancements(edition_id,stage_index,team_id,seed_rank,source_group) SELECT :edition,:stage,:team,:seed,:group WHERE NOT EXISTS(SELECT 1 FROM tournament_advancements WHERE edition_id=:edition AND stage_index=:stage AND team_id=:team)",p);
+    public void advanceTeam(long edition, int stage, long team, int seed, String group) {
+        advanceTeam(edition, stage, team, seed, group, null);
     }
-    public List<Entrant> stageTeams(String id,Edition edition,int stage){
-        String key=edition.rules().stages().get(stage).key();
-        return db.query("SELECT t.team_id,t.name,t.rating,e.entry_stage,COALESCE(a.seed_rank,e.seed_rank) AS seed_rank,e.association,COALESCE(a.source_group,e.region) AS region,COALESCE(l.division,9) AS division FROM tournament_teams e JOIN save_teams t ON t.save_id=e.save_id AND t.team_id=e.team_id LEFT JOIN catalog_leagues l ON l.id=t.league_id LEFT JOIN tournament_advancements a ON a.edition_id=e.edition_id AND a.team_id=e.team_id AND a.stage_index=:stage WHERE e.save_id=:id AND e.edition_id=:edition AND (e.entry_stage=:key OR a.team_id IS NOT NULL) ORDER BY COALESCE(a.seed_rank,e.seed_rank),t.team_id",new MapSqlParameterSource("id",id).addValue("edition",edition.id()).addValue("stage",stage).addValue("key",key),ENTRANT);
+
+    public void advanceTeam(long edition, int stage, long team, int seed, String group, Integer position) {
+        var p = new MapSqlParameterSource("edition", edition)
+            .addValue("stage", stage)
+            .addValue("team", team)
+            .addValue("seed", seed)
+            .addValue("group", group)
+            .addValue("position", position);
+        db.update(
+            "INSERT INTO tournament_advancements(edition_id,stage_index,team_id,seed_rank,source_group,bracket_position) SELECT :edition,:stage,:team,:seed,:group,:position WHERE NOT EXISTS(SELECT 1 FROM tournament_advancements WHERE edition_id=:edition AND stage_index=:stage AND team_id=:team)",
+            p
+        );
     }
-    public long leagueStage(String id,Edition edition,int index,List<Entrant> entrants,List<NationalLeagueDraw.Fixture> fixtures,Map<Long,String> groups){
-        var stage=edition.rules().stages().get(index);long virtualLeague=-(edition.id()*1000+index+1);
-        var p=new MapSqlParameterSource("id",id).addValue("league",virtualLeague).addValue("year",edition.year()).addValue("label",edition.label()).addValue("name",edition.name()+" · "+stage.label()).addValue("country",edition.country()).addValue("teams",entrants.size()).addValue("rounds",stage.matchDates().size()).addValue("first",stage.firstDate()).addValue("last",stage.secondDate()).addValue("seed",virtualLeague).addValue("edition",edition.id()).addValue("stage",index).addValue("format",stage.format());
-        db.update("INSERT INTO national_seasons(save_id,league_id,season_year,label,competition_name,country,division,team_count,rounds,first_date,last_date,draw_seed,format,tournament_id,tournament_stage) VALUES(:id,:league,:year,:label,:name,:country,0,:teams,:rounds,:first,:last,:seed,:format,:edition,:stage)",p);
-        long season=db.queryForObject("SELECT id FROM national_seasons WHERE tournament_id=:edition AND tournament_stage=:stage",p,Long.class);
-        db.batchUpdate("INSERT INTO national_season_teams(save_id,season_id,team_id,team_name,group_name) VALUES(:id,:season,:team,:name,:group)",entrants.stream().map(t->new MapSqlParameterSource("id",id).addValue("season",season).addValue("team",t.id()).addValue("name",t.name()).addValue("group",groups.get(t.id()))).toArray(MapSqlParameterSource[]::new));
-        db.batchUpdate("INSERT INTO national_fixtures(save_id,season_id,round_number,match_date,home_team_id,away_team_id,leg_number) VALUES(:id,:season,:round,:date,:home,:away,1)",fixtures.stream().map(f->new MapSqlParameterSource("id",id).addValue("season",season).addValue("round",f.round()).addValue("date",f.date()).addValue("home",f.homeTeamId()).addValue("away",f.awayTeamId())).toArray(MapSqlParameterSource[]::new));
+
+    public List<Entrant> stageTeams(String id, Edition edition, int stage) {
+        String key = edition.rules().stages().get(stage).key();
+        return db.query(
+            "SELECT t.team_id,t.name,t.rating,e.entry_stage,COALESCE(a.seed_rank,e.seed_rank) AS seed_rank,e.association,COALESCE(a.source_group,e.region) AS region,COALESCE(l.division,9) AS division FROM tournament_teams e JOIN save_teams t ON t.save_id=e.save_id AND t.team_id=e.team_id LEFT JOIN catalog_leagues l ON l.id=t.league_id LEFT JOIN tournament_advancements a ON a.edition_id=e.edition_id AND a.team_id=e.team_id AND a.stage_index=:stage WHERE e.save_id=:id AND e.edition_id=:edition AND (e.entry_stage=:key OR a.team_id IS NOT NULL) ORDER BY COALESCE(a.bracket_position,a.seed_rank,e.seed_rank),t.team_id",
+            new MapSqlParameterSource("id", id)
+                .addValue("edition", edition.id())
+                .addValue("stage", stage)
+                .addValue("key", key),
+            ENTRANT
+        );
+    }
+
+    public long leagueStage(
+        String id,
+        Edition edition,
+        int index,
+        List<Entrant> entrants,
+        List<NationalLeagueDraw.Fixture> fixtures,
+        Map<Long, String> groups
+    ) {
+        var stage = edition.rules().stages().get(index);
+        long virtualLeague = -(edition.id() * 1000 + index + 1);
+        var p = new MapSqlParameterSource("id", id)
+            .addValue("league", virtualLeague)
+            .addValue("year", edition.year())
+            .addValue("label", edition.label())
+            .addValue("name", edition.name() + " · " + stage.label())
+            .addValue("country", edition.country())
+            .addValue("teams", entrants.size())
+            .addValue("rounds", stage.matchDates().size())
+            .addValue("first", stage.firstDate())
+            .addValue("last", stage.secondDate())
+            .addValue("seed", virtualLeague)
+            .addValue("edition", edition.id())
+            .addValue("stage", index)
+            .addValue("format", stage.format());
+        db.update(
+            "INSERT INTO national_seasons(save_id,league_id,season_year,label,competition_name,country,division,team_count,rounds,first_date,last_date,draw_seed,format,tournament_id,tournament_stage) VALUES(:id,:league,:year,:label,:name,:country,0,:teams,:rounds,:first,:last,:seed,:format,:edition,:stage)",
+            p
+        );
+        long season = db.queryForObject(
+            "SELECT id FROM national_seasons WHERE tournament_id=:edition AND tournament_stage=:stage",
+            p,
+            Long.class
+        );
+        db.batchUpdate(
+            "INSERT INTO national_season_teams(save_id,season_id,team_id,team_name,group_name) VALUES(:id,:season,:team,:name,:group)",
+            entrants
+                .stream()
+                .map(t ->
+                    new MapSqlParameterSource("id", id)
+                        .addValue("season", season)
+                        .addValue("team", t.id())
+                        .addValue("name", t.name())
+                        .addValue("group", groups.get(t.id()))
+                )
+                .toArray(MapSqlParameterSource[]::new)
+        );
+        db.batchUpdate(
+            "INSERT INTO national_fixtures(save_id,season_id,round_number,match_date,home_team_id,away_team_id,leg_number) VALUES(:id,:season,:round,:date,:home,:away,1)",
+            fixtures
+                .stream()
+                .map(f ->
+                    new MapSqlParameterSource("id", id)
+                        .addValue("season", season)
+                        .addValue("round", f.round())
+                        .addValue("date", f.date())
+                        .addValue("home", f.homeTeamId())
+                        .addValue("away", f.awayTeamId())
+                )
+                .toArray(MapSqlParameterSource[]::new)
+        );
         return season;
     }
-    public Map<Long,String> stageGroups(long edition,int stage){
-        var rows=db.query("SELECT t.team_id,t.group_name FROM national_season_teams t JOIN national_seasons s ON s.id=t.season_id WHERE s.tournament_id=:edition AND s.tournament_stage=:stage",new MapSqlParameterSource("edition",edition).addValue("stage",stage),(r,n)->new AbstractMap.SimpleEntry<>(r.getLong(1),r.getString(2)));
-        var result=new HashMap<Long,String>();rows.forEach(row->result.put(row.getKey(),row.getValue()));return result;
+
+    public Map<Long, String> stageGroups(long edition, int stage) {
+        var rows = db.query(
+            "SELECT t.team_id,t.group_name FROM national_season_teams t JOIN national_seasons s ON s.id=t.season_id WHERE s.tournament_id=:edition AND s.tournament_stage=:stage",
+            new MapSqlParameterSource("edition", edition).addValue("stage", stage),
+            (r, n) -> new AbstractMap.SimpleEntry<>(r.getLong(1), r.getString(2))
+        );
+        var result = new HashMap<Long, String>();
+        rows.forEach(row -> result.put(row.getKey(), row.getValue()));
+        return result;
     }
 
     public void champion(long edition, long winner, long runner) {
@@ -282,6 +441,16 @@ public class TournamentRepository {
             "SELECT MIN(id) FROM national_seasons WHERE tournament_id=:edition",
             new MapSqlParameterSource("edition", edition),
             Long.class
+        );
+    }
+
+    public Set<Long> humanTeams(String id) {
+        return new HashSet<>(
+            db.query(
+                "SELECT team_id FROM save_members WHERE save_id=:id",
+                new MapSqlParameterSource("id", id),
+                (r, n) -> r.getLong(1)
+            )
         );
     }
 

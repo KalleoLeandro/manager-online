@@ -24,3 +24,7 @@
 .player-rating{font:700 12px ui-monospace,monospace;color:#365c85;min-width:30px;text-align:right}.player-row{grid-template-columns:36px minmax(0,1fr) 35px 45px 32px!important}
 
 .rating-legend{font-size:10px;line-height:1.5;color:#758573;margin:0 0 12px}
+
+.player-profile-button{display:inline-flex;align-items:center;gap:6px;max-width:100%;min-height:36px;padding:6px 8px;border:1px solid #cbd9cc;border-radius:5px;background:#f1f6ed;color:#315a3d;font:600 12px/1.4 Arial,sans-serif;text-align:left;cursor:pointer}.player-profile-button app-game-icon{width:14px;height:14px;flex-shrink:0}.player-profile-button:hover{background:#e3eedc;border-color:#89a27b}.player-profile-button:focus-visible{outline:2px solid #497f58;outline-offset:2px}.player-row.off .player-profile-button{color:#526a59}@media(max-width:760px){.player-profile-button{font-size:11px;min-height:40px}}
+
+.matchday{position:relative;isolation:isolate}.day-header{padding:10px 12px;border-radius:9px;background:#f2f7f0d9;border:1px solid #d1dfd3}

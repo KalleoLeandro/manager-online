@@ -40,6 +40,8 @@ public class MatchdayService {
     private final WorldCompetitionService world;
     private final TournamentService tournaments;
     private final DayProgressRepository calendar;
+    private final ClubEventService clubEvents;
+    private final PlayerAwardService awards;
     private final SecureRandom random = new SecureRandom();
 
     public MatchdayService(
@@ -58,7 +60,9 @@ public class MatchdayService {
         FinanceDailyService financialDays,
         WorldCompetitionService world,
         TournamentService tournaments,
-        DayProgressRepository calendar
+        DayProgressRepository calendar,
+        ClubEventService clubEvents,
+        PlayerAwardService awards
     ) {
         this.repository = repository;
         this.leagues = leagues;
@@ -76,6 +80,8 @@ public class MatchdayService {
         this.world = world;
         this.tournaments = tournaments;
         this.calendar = calendar;
+        this.clubEvents = clubEvents;
+        this.awards = awards;
     }
 
     private LeagueMemberDto member(String id, String header) {
@@ -275,6 +281,8 @@ public class MatchdayService {
         var fixtures = repository.humanMatchday(id, matchDate);
         for (var member : room.members()) finances.requireApproved(id, member.teamId());
         for (var fixture : fixtures) {
+            clubEvents.processDay(id, fixture.homeId(), fixture.date());
+            clubEvents.processDay(id, fixture.awayId(), fixture.date());
             financialDays.processThrough(id, fixture.homeId(), fixture.date());
             financialDays.processThrough(id, fixture.awayId(), fixture.date());
         }
@@ -283,6 +291,7 @@ public class MatchdayService {
         profiles.initialize();
         var human = new HashSet<Long>();
         room.members().forEach(m -> human.add(m.teamId()));
+        var prepared = new ArrayList<MatchStateDto>();
         for (var f : fixtures) {
             var state = new MatchStateDto();
             state.engineVersion = MatchEngine.CURRENT_VERSION;
@@ -291,6 +300,7 @@ public class MatchdayService {
             state.date = f.date().toString();
             state.competitionName = repository.competitionName(id, f.id());
             tournaments.configure(id, state);
+            clubEvents.configure(id, state);
             state.seed = random.nextLong();
             state.addedFirst = 1 + random.nextInt(3);
             state.addedSecond = 3 + random.nextInt(4);
@@ -328,12 +338,14 @@ public class MatchdayService {
                 null,
                 "Bola rolando! " + state.home.name + " × " + state.away.name + "."
             );
-            repository.create(id, state, clock.instant().plusMillis(MatchSpeed.delay(tickMillis, speed)), batch);
+            prepared.add(state);
         }
         for (var m : room.members())
             if (fixtures.stream().noneMatch(f -> f.homeId() == m.teamId() || f.awayId() == m.teamId())) {
                 repository.finishIdleTeam(id, m.teamId(), matchDate);
             }
+        var kickoff = clock.instant().plusMillis(MatchSpeed.kickoffDelay(tickMillis, speed));
+        for (var state : prepared) repository.create(id, state, kickoff, batch);
         lifecycle.touch(id);
         events.publishEvent(new SaveChangedEvent(id));
         events.publishEvent(new MatchUpdatedEvent(id, 0, 0));
@@ -610,7 +622,9 @@ public class MatchdayService {
     private void finishMatch(String id, MatchStateDto s) {
         int day = repository.dayNumber(id, LocalDate.parse(s.date));
         repository.finish(id, s, day);
+        awards.recordActual(id,s);
         tournaments.completed(id, s);
+        clubEvents.completeFriendly(id, s);
         repository.finishTeam(id, s.home.id, day);
         repository.finishTeam(id, s.away.id, day);
         finances.matchBonuses(id, s);

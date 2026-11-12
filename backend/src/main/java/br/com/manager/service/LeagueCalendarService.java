@@ -51,9 +51,12 @@ public class LeagueCalendarService {
         // Include the rest of the final month for club events after the last national fixture.
         last = last.with(TemporalAdjusters.lastDayOfMonth());
         if (last.isBefore(week.currentDate())) last = LocalDate.of(week.currentDate().getYear(), 12, 31);
+        var lastEvent = calendar.lastClubEvent(id, member.teamId(), week.currentDate());
+        if (lastEvent != null && lastEvent.isAfter(last)) last = lastEvent.with(TemporalAdjusters.lastDayOfMonth());
         var events = new ArrayList<>(calendar.events(id, member.teamId(), first, last));
         events.addAll(fixtures.week(id, member.teamId(), first, last));
         events.addAll(tournaments.drawEvents(id, first, last));
+        birthdays(id, member.teamId(), week.currentDate(), first, last, events);
         events.addAll(
             week
                 .events()
@@ -100,6 +103,7 @@ public class LeagueCalendarService {
         var events = new ArrayList<>(calendar.events(id, member.teamId(), monday, sunday));
         events.addAll(fixtures.week(id, member.teamId(), monday, sunday));
         events.addAll(tournaments.drawEvents(id, monday, sunday));
+        birthdays(id, member.teamId(), date, monday, sunday, events);
         long ready = room
             .members()
             .stream()
@@ -132,5 +136,35 @@ public class LeagueCalendarService {
         }
         events.sort(Comparator.comparing(CalendarEventDto::date).thenComparing(CalendarEventDto::id));
         return new LeagueCalendarResponse(date, monday, sunday, List.copyOf(events));
+    }
+
+    private void birthdays(
+        String id,
+        long team,
+        LocalDate today,
+        LocalDate first,
+        LocalDate last,
+        List<CalendarEventDto> events
+    ) {
+        var founded = calendar.foundation(id, team);
+        if (founded == null) return;
+        for (int year = first.getYear(); year <= last.getYear(); year++) {
+            var date = MonthDay.from(founded).atYear(year);
+            if (
+                date.isBefore(first) ||
+                date.isAfter(last) ||
+                events.stream().anyMatch(e -> e.date().equals(date) && e.title().equals("Aniversário do clube"))
+            ) continue;
+            events.add(
+                new CalendarEventDto(
+                    "anniversary-" + year,
+                    date,
+                    "CLUB",
+                    "Aniversário do clube",
+                    year - founded.getYear() + " anos de história. A festa pode ser organizada em Vida do clube.",
+                    date.isBefore(today) ? "COMPLETED" : "SCHEDULED"
+                )
+            );
+        }
     }
 }

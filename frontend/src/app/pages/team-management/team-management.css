@@ -20,3 +20,7 @@
 .management-grid.lineup-only,.management-grid.roster-only{grid-template-columns:minmax(0,1fr)}.management-grid.lineup-only .tactics-panel{min-width:0;max-width:none}.management-grid.lineup-only .tactics-panel app-tactical-board{max-width:none;margin:0}
 
 .club-day-hub{display:grid;grid-template-columns:minmax(0,1fr);gap:18px;margin:20px 0}.club-day-hub.with-calendar{grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch}.club-day-hub>*{min-width:0}@media(max-width:1100px){.club-day-hub.with-calendar{grid-template-columns:minmax(0,1fr)}}
+
+.management-actions{position:sticky;top:10px;z-index:20;margin:16px 0;box-shadow:0 5px 16px #10251d14}.management-actions .save-team{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:700}.management-actions .confirm-team{font-weight:700}@media(max-width:700px){.management-actions{top:6px;gap:12px}.management-actions>div:last-child{gap:8px}.management-actions button{padding:10px 12px;min-height:44px}}
+
+.club-app{position:relative;isolation:isolate}

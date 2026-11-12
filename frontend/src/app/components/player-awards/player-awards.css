@@ -1,0 +1,431 @@
+.award-dialog {
+  padding: 0;
+  border: 1px solid #b99b56;
+  border-radius: 18px;
+  width: min(920px, calc(100vw - 24px));
+  max-width: none;
+  max-height: calc(100dvh - 24px);
+  background: #111b25;
+  color: #f5f0df;
+  box-shadow: 0 25px 100px #000b;
+  overflow: auto;
+}
+.award-dialog::backdrop {
+  background: #050c18d9;
+  backdrop-filter: blur(7px);
+}
+.ceremony {
+  position: relative;
+  isolation: isolate;
+  padding: 26px 36px 30px;
+  min-height: 570px;
+  overflow: hidden;
+  box-sizing: border-box;
+  background:
+    radial-gradient(ellipse at 50% 0, #96754230, transparent 65%), linear-gradient(145deg, #17212e, #101822);
+}
+.spotlights {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    conic-gradient(from 155deg at 10% -10%, transparent 0deg, #dec48b12 10deg, transparent 30deg),
+    conic-gradient(from 170deg at 90% -10%, transparent 0deg, #dec48b12 15deg, transparent 30deg);
+  pointer-events: none;
+}
+.ceremony-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  font: 500 10px sans-serif;
+  letter-spacing: 0.16em;
+  color: #d1b979;
+}
+.ceremony-top button {
+  border: 1px solid #cbb67745;
+  border-radius: 6px;
+  background: transparent;
+  color: #ddcfaf;
+  padding: 9px 12px;
+  cursor: pointer;
+  font: inherit;
+  letter-spacing: 0;
+  min-height: 36px;
+}
+header {
+  text-align: center;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  margin: 12px 0 22px;
+}
+header app-trophy-image {
+  width: 70px;
+  filter: drop-shadow(0 5px 15px #a5883240);
+}
+header small {
+  font-size: 11px;
+  color: #b9b5a9;
+}
+h1 {
+  margin: 3px 0;
+  font:
+    700 42px "Barlow Condensed",
+    sans-serif;
+  letter-spacing: 0.02em;
+  color: #f3d786;
+}
+header p {
+  font-size: 12px;
+  color: #ccc6b8;
+  margin: 5px 0;
+}
+.intro-message {
+  display: grid;
+  place-items: center;
+  gap: 22px;
+  min-height: 200px;
+  color: #c9b379;
+  font: 600 12px sans-serif;
+  letter-spacing: 0.25em;
+  animation: appear 1.2s both;
+}
+.gold-line {
+  height: 1px;
+  width: 180px;
+  background: linear-gradient(90deg, transparent, #d7bb75, transparent);
+}
+.nominees {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  min-height: 210px;
+  align-items: flex-end;
+}
+.nominee {
+  text-align: center;
+  width: min(30%, 210px);
+  animation: appear 0.9s both;
+}
+.nominee app-player-portrait {
+  width: 125px;
+  height: 140px;
+  border-radius: 50% 50% 12px 12px;
+  background: radial-gradient(ellipse at bottom, #d6b86b40, transparent);
+  border-bottom: 2px solid #b99754;
+}
+.nominee h2 {
+  font:
+    600 24px "Barlow Condensed",
+    sans-serif;
+  margin: 12px 0 6px;
+}
+.nominee > span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font-size: 10px;
+  color: #cac4b5;
+}
+.nominee img {
+  width: 20px;
+  height: 24px;
+  object-fit: contain;
+}
+.decision-pause {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  min-height: 50px;
+  color: #d6bd7d;
+}
+.decision-pause i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: pulse 1s infinite;
+}
+.decision-pause i:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.decision-pause i:nth-child(3) {
+  animation-delay: 0.4s;
+}
+.decision-pause strong {
+  margin-left: 8px;
+  font: 500 11px sans-serif;
+  letter-spacing: 0.15em;
+}
+.award-result {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 35px;
+  min-height: 230px;
+  animation: appear 1.1s both;
+}
+.winner-portrait {
+  position: relative;
+}
+.winner-portrait app-player-portrait {
+  width: 170px;
+  height: 195px;
+  border-radius: 18px;
+  background: linear-gradient(#c3ad6d0a, #d2ae5430);
+  border-bottom: 3px solid #9c9b9b;
+}
+.winner-portrait > span {
+  position: absolute;
+  bottom: -9px;
+  left: -13px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  width: 49px;
+  height: 49px;
+  background: #8d9195;
+  color: #fff;
+  font:
+    700 23px "Barlow Condensed",
+    sans-serif;
+  border: 3px solid #15202c;
+}
+.winner-copy small {
+  font: 600 10px sans-serif;
+  letter-spacing: 0.2em;
+  color: #cfb576;
+}
+.winner-copy h2 {
+  font:
+    700 40px "Barlow Condensed",
+    sans-serif;
+  margin: 8px 0;
+}
+.winner-copy > p {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #d1cabb;
+  margin: 8px 0 18px;
+}
+.winner-copy img {
+  width: 24px;
+  height: 28px;
+  object-fit: contain;
+}
+.winner-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 22px;
+}
+.winner-stats span {
+  display: grid;
+  gap: 5px;
+  font-size: 10px;
+  color: #aca99e;
+}
+.winner-stats b {
+  font:
+    700 23px ui-monospace,
+    monospace;
+  color: #eee8d9;
+}
+.gold-winner .winner-portrait app-player-portrait {
+  border-color: #e4c46e;
+  box-shadow: 0 10px 40px #b48c2330;
+}
+.gold-winner .winner-portrait > span {
+  background: #c7a150;
+  color: #161d24;
+}
+.gold-winner h2 {
+  color: #f0d282;
+}
+.revealed-results {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 24px 0;
+}
+.revealed-results > div {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  column-gap: 9px;
+  row-gap: 4px;
+  padding: 10px 14px;
+  border: 1px solid #c7aa6335;
+  border-radius: 8px;
+  font-size: 11px;
+  animation: appear 0.8s both;
+}
+.revealed-results b {
+  grid-row: span 2;
+  color: #dfc47e;
+  font-size: 16px;
+}
+.revealed-results small {
+  font-size: 9px;
+  color: #b5b0a3;
+}
+footer {
+  margin-top: 24px;
+}
+.ceremony-progress {
+  height: 2px;
+  background: #a08e5730;
+  border-radius: 2px;
+  overflow: hidden;
+}
+.ceremony-progress i {
+  display: block;
+  height: 100%;
+  background: #c9ac60;
+  transition: width 0.25s linear;
+}
+.presentation-note {
+  display: block;
+  text-align: center;
+  margin-top: 18px;
+  color: #9c9b94;
+  font-size: 10px;
+}
+.continue {
+  display: block;
+  margin: 20px auto 0;
+  min-height: 44px;
+  padding: 12px 40px;
+  border: 1px solid #f0d58c;
+  border-radius: 7px;
+  background: #dfc37b;
+  color: #18212c;
+  font-weight: 700;
+  cursor: pointer;
+}
+.continue:disabled {
+  opacity: 0.6;
+}
+details {
+  font-size: 10px;
+  color: #b9b4a6;
+  margin: 17px auto 0;
+  max-width: 650px;
+}
+summary {
+  cursor: pointer;
+}
+details p {
+  line-height: 1.7;
+}
+.error {
+  color: #f4b19c;
+  text-align: center;
+  font-size: 12px;
+}
+.no-winner {
+  text-align: center;
+  max-width: 400px;
+  margin: 50px auto;
+  color: #c7c0af;
+  font-size: 13px;
+}
+button:focus-visible,
+summary:focus-visible {
+  outline: 3px solid #ead189;
+  outline-offset: 3px;
+}
+@keyframes appear {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes pulse {
+  50% {
+    opacity: 0.15;
+    transform: translateY(-4px);
+  }
+}
+@media (max-width: 600px) {
+  .ceremony {
+    padding: 18px 16px 24px;
+    min-height: 550px;
+  }
+  .ceremony-top {
+    letter-spacing: 0.06em;
+    font-size: 9px;
+  }
+  h1 {
+    font-size: 34px;
+  }
+  header app-trophy-image {
+    width: 55px;
+  }
+  .nominees {
+    gap: 9px;
+    min-height: 205px;
+  }
+  .nominee app-player-portrait {
+    width: 78px;
+    height: 95px;
+  }
+  .nominee h2 {
+    font-size: 18px;
+  }
+  .nominee > span {
+    font-size: 9px;
+    flex-direction: column;
+  }
+  .award-result {
+    gap: 15px;
+    flex-direction: column;
+    text-align: center;
+  }
+  .winner-portrait app-player-portrait {
+    width: 135px;
+    height: 150px;
+  }
+  .winner-copy h2 {
+    font-size: 30px;
+  }
+  .winner-copy > p,
+  .winner-stats {
+    justify-content: center;
+  }
+  .winner-stats {
+    gap: 17px;
+  }
+  .winner-stats b {
+    font-size: 20px;
+  }
+  .revealed-results {
+    gap: 7px;
+  }
+  .revealed-results > div {
+    font-size: 10px;
+    padding: 8px;
+  }
+  .winner-copy > p {
+    margin-bottom: 13px;
+  }
+  .ceremony-top button {
+    padding: 7px;
+    font-size: 9px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

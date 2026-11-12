@@ -1,0 +1,4 @@
+@if(url();as source){@if(!failed()){
+ <div class="stadium-layer" [class.visible]="loaded()" [class.dark]="dark()" aria-hidden="true"><img [src]="source" alt="" decoding="async" (load)="loaded.set(true)" (error)="failed.set(true)"><div class="stadium-veil"></div></div>
+ @if(loaded()){<a class="stadium-credit" href="/api/stadiums/credits" target="_blank" rel="noopener">Foto do estádio · créditos</a>}
+}}

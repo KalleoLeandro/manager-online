@@ -1,6 +1,11 @@
 /** Stable image IDs match backend/res/trophies; image requests always go to our backend. */
 export interface Trophy { id:number; name:string }
 export const PLAYER_AWARDS:readonly Trophy[]=[{id:40,name:'Bola de ouro'},{id:41,name:'Chuteira de ouro'},{id:42,name:'Luva de ouro'}];
+export const WORLD_TROPHIES:readonly Trophy[]=[{id:32,name:'Copa Intercontinental da FIFA'},{id:33,name:'Mundial de Clubes da FIFA'}];
+export function competitionTrophy(key:string,name:string):Trophy{
+ const ids:Record<string,number>={BRA_CUP:20,ENG_CUP:21,ESP_CUP:22,ITA_CUP:23,FRA_CUP:24,GER_CUP:25,LIBERTADORES:30,CHAMPIONS:31,INTERCONTINENTAL:32,CLUB_WORLD_CUP:33};
+ return {id:ids[key]||3,name};
+}
 const competitions:Record<string,[Trophy,Trophy]>={
  brazil:[{id:10,name:'Brasileirão'},{id:20,name:'Copa do Brasil'}],
  england:[{id:11,name:'Premier League'},{id:21,name:'FA Cup'}],

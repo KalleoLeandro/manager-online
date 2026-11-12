@@ -19,6 +19,7 @@ public class WorldCompetitionService {
     private final SaveRepository leagues;
     private final TournamentService tournaments;
     private final CompetitionHistoryRepository history;
+    private final PlayerAwardService awards;
 
     public WorldCompetitionService(
         WorldCompetitionRepository repository,
@@ -26,7 +27,8 @@ public class WorldCompetitionService {
         NationalSeasonService seasons,
         SaveRepository leagues,
         TournamentService tournaments,
-        CompetitionHistoryRepository history
+        CompetitionHistoryRepository history,
+        PlayerAwardService awards
     ) {
         this.repository = repository;
         this.nationals = nationals;
@@ -34,6 +36,7 @@ public class WorldCompetitionService {
         this.leagues = leagues;
         this.tournaments = tournaments;
         this.history = history;
+        this.awards = awards;
     }
 
     @Transactional
@@ -56,6 +59,7 @@ public class WorldCompetitionService {
         }
         repository.finish(id, results);
         tournaments.synchronize(id, date);
+        awards.synchronize(id, date);
     }
 
     @Transactional

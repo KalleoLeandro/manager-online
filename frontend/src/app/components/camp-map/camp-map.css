@@ -1,0 +1,60 @@
+:host {
+  display: block;
+}
+.map-frame {
+  border: 1px solid var(--border, #c9ddd4);
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--surface, #fff);
+}
+.map-label {
+  display: block;
+  padding: 16px 18px;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: var(--muted);
+}
+svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.ocean {
+  fill: #dcecec;
+}
+.grid {
+  color: #64958c;
+  opacity: 0.4;
+}
+.land {
+  fill: #b6cec0;
+  stroke: #f4f8f4;
+  stroke-width: 1.5;
+}
+.pin {
+  fill: #29654e;
+  cursor: pointer;
+  outline: none;
+}
+.target {
+  fill: transparent;
+}
+.halo {
+  fill: #fff;
+  opacity: 0.85;
+}
+.selected,
+.pin:focus-visible {
+  fill: #ba8136;
+}
+.selected .halo,
+.pin:focus-visible .halo {
+  stroke: #ba8136;
+  stroke-width: 3;
+  fill: #fff7df;
+}
+.map-frame p {
+  padding: 0 18px;
+  font-size: 11px;
+  color: var(--muted);
+}

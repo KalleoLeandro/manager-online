@@ -54,6 +54,30 @@ class SaveRealtimeTests {
 
     final JsonMapper json = JsonMapper.builder().build();
 
+    @Test
+    void httpsSameOriginWorksBehindProxyAndAnUnrelatedOriginIsRejected() throws Exception {
+        var client = HttpClient.newHttpClient();
+        var socket = client
+            .newWebSocketBuilder()
+            .header("Origin", "https://lealinformatica.com.br")
+            .header("X-Forwarded-Proto", "https")
+            .header("X-Forwarded-Host", "lealinformatica.com.br")
+            .header("X-Forwarded-Port", "443")
+            .buildAsync(URI.create("ws://localhost:" + port + "/ws/saves"), new WebSocket.Listener() {})
+            .get(10, TimeUnit.SECONDS);
+        socket.sendClose(WebSocket.NORMAL_CLOSURE, "test complete").join();
+        assertThatThrownBy(() ->
+            client
+                .newWebSocketBuilder()
+                .header("Origin", "https://unrelated.example")
+                .header("X-Forwarded-Proto", "https")
+                .header("X-Forwarded-Host", "lealinformatica.com.br")
+                .header("X-Forwarded-Port", "443")
+                .buildAsync(URI.create("ws://localhost:" + port + "/ws/saves"), new WebSocket.Listener() {})
+                .get(10, TimeUnit.SECONDS)
+        ).hasCauseInstanceOf(java.net.http.WebSocketHandshakeException.class);
+    }
+
     private LeagueAccessResponse create() {
         return saves.create(new CreateLeagueRequest("Tempo real", 2, "Criador", catalog.teams(null).getFirst().id()));
     }

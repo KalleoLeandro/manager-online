@@ -1,0 +1,228 @@
+<section class="club-events" aria-label="Eventos do clube">
+  <header class="events-heading">
+    <div>
+      <small>ALÉM DAS QUATRO LINHAS</small>
+      <h2>Vida do clube</h2>
+      <p>Prepare o elenco, aproxime a torcida e celebre a temporada.</p>
+    </div>
+    <button
+      type="button"
+      class="primary"
+      [disabled]="disabled()||loading()||busy()"
+      (click)="expanded.set(!expanded())"
+    >
+      {{expanded()?'Fechar organização':'+ Organizar evento'}}
+    </button>
+  </header>
+  @if(error()){
+  <p class="feedback error" role="alert">
+    {{error()}} <button type="button" (click)="load()">Atualizar</button>
+  </p>
+  } @if(success()){
+  <p class="feedback success" role="status">{{success()}}</p>
+  } @if(data();as data){
+  <div class="relationships">
+    <div>
+      <span>Relação com a torcida</span
+      ><meter min="0" max="100" [value]="data.fanTrust" aria-label="Relação com a torcida"></meter>
+    </div>
+    <div>
+      <span>Relação com os jogadores</span
+      ><meter min="0" max="100" [value]="data.squadTrust" aria-label="Relação com os jogadores"></meter>
+    </div>
+    @if(data.foundationDate){
+    <div class="club-birthday">
+      <span>Fundação do clube</span
+      ><strong>{{label(data.foundationDate,{day:'2-digit',month:'long',year:'numeric'})}}</strong
+      ><button type="button" (click)="navigate.emit(data.nextAnniversary!)">Ver próximo aniversário →</button>
+    </div>
+    }
+  </div>
+  @if(expanded()){
+  <div class="event-planner">
+    <div class="kind-grid" role="group" aria-label="Tipo de evento">
+      @for(item of data.kinds;track item.key){<button
+        type="button"
+        [class.active]="kind()===item.key"
+        [attr.aria-pressed]="kind()===item.key"
+        [disabled]="busy()"
+        (click)="choose(item.key)"
+      >
+        <strong>{{item.name}}</strong
+        ><small
+          >{{item.annual?'Uma vez por ano':item.key==='CAMP'?'Treinamento
+          especializado':item.key==='FRIENDLY'?'Jogo de preparação':'Relações do clube'}}</small
+        ></button
+      >}
+    </div>
+    <div class="event-intro">
+      <h3>{{selectedKind()?.name}}</h3>
+      <p>{{selectedKind()?.description}}</p>
+      @if(selectedKind()?.cooldownDays){<small
+        >Intervalo mínimo entre eventos deste tipo: {{selectedKind()!.cooldownDays}} dias.</small
+      >}
+    </div>
+    <div class="event-fields">
+      @if(kind()==='ANNIVERSARY'&&!data.foundationDate){<label
+        >Data de fundação do clube<input
+          type="date"
+          [ngModel]="foundation()"
+          (ngModelChange)="foundationChange($event)"
+          [disabled]="busy()"
+        /><small>A informação será guardada nesta liga e usada nos próximos anos.</small></label
+      >}
+      <label
+        >Data no jogo<input
+          type="date"
+          [min]="data.currentDate"
+          [ngModel]="date()"
+          (ngModelChange)="date.set($event)"
+          [disabled]="kind()==='ANNIVERSARY'||busy()"
+        />@if(kind()==='ANNIVERSARY'){<small
+          >O calendário acompanha automaticamente o próximo aniversário.</small
+        >}</label
+      >
+      @if(kind()==='CAMP'){<label
+        >Duração<select [ngModel]="days()" (ngModelChange)="days.set(+$event)" [disabled]="busy()">
+          @for(n of [1,2,3,4,5,6,7];track n){
+          <option [ngValue]="n">{{n}} dia{{n===1?'':'s'}}</option>
+          }</select
+        ><small>Até {{label(endDate(),{day:'2-digit',month:'long'})}}</small></label
+      >}
+    </div>
+    @if(kind()==='CAMP'){
+    <div class="camp-layout">
+      <app-camp-map
+        [venues]="data.venues"
+        [selected]="venue()"
+        [disabled]="busy()"
+        (choose)="venue.set($event)"
+      />
+      <div class="destinations" aria-label="Locais de concentração">
+        @for(v of data.venues;track v.key){<button
+          type="button"
+          [class.active]="venue()===v.key"
+          [disabled]="busy()"
+          (click)="venue.set(v.key)"
+        >
+          <span><strong>{{v.name}}</strong><small>{{v.country}}</small></span
+          ><b>{{v.dailyCost|currency:'BRL':'symbol':'1.0-0'}}<small>/ dia</small></b></button
+        >}
+      </div>
+    </div>
+    @if(selectedVenue();as selected){
+    <div class="camp-detail">
+      <div>
+        <small>FOCO DO TREINAMENTO</small>
+        <h4>{{selected.name}}</h4>
+        <p>{{selected.description}}</p>
+        <div class="focus-tags">
+          @for(attribute of selected.focus;track attribute){<span>{{attr[attribute]||attribute}}</span>}
+        </div>
+      </div>
+      <p class="fatigue-note">
+        Treinos consomem condição física todos os dias. Atletas lesionados ficam fora das atividades. A
+        evolução é acumulativa e pode exigir mais de uma concentração.
+      </p>
+    </div>
+    } } @if(kind()==='FRIENDLY'){
+    <label class="opponent-search"
+      >Buscar adversário<input
+        type="search"
+        placeholder="Nome do clube"
+        [ngModel]="search()"
+        (ngModelChange)="search.set($event)"
+        [disabled]="busy()"
+    /></label>
+    <div class="opponents" role="group" aria-label="Adversário do amistoso">
+      @for(club of opponents();track club.id){<button
+        type="button"
+        [class.active]="opponent()===club.id"
+        [disabled]="busy()"
+        (click)="opponent.set(club.id)"
+      >
+        <img appClubCrest [clubId]="club.id" alt="" /><span
+          ><strong>{{club.name}}</strong
+          ><small>{{club.human?'Treinador humano · exige aceite':'Clube do computador'}}</small
+          ><b>{{club.fee|currency:'BRL':'symbol':'1.0-0'}}</b></span
+        ></button
+      >}@empty{
+      <p>Nenhum clube encontrado.</p>
+      }
+    </div>
+    <p class="fine-print">
+      O organizador paga a taxa ao reservar. O adversário recebe o cachê ao disputar o jogo. Cada clube recebe
+      metade da bilheteria estimada no encerramento. Amistosos não somam pontos no campeonato.
+    </p>
+    }
+    <footer class="booking-summary">
+      <div>
+        <small>CUSTO DA ORGANIZAÇÃO</small
+        ><strong>{{quote()?(quote()!.cost|currency:'BRL':'symbol':'1.0-0'):'—'}}</strong
+        ><span>Caixa do clube: {{data.cash|currency:'BRL':'symbol':'1.0-0'}}</span>
+      </div>
+      <button
+        type="button"
+        class="primary book-event"
+        [disabled]="disabled()||busy()||quoting()||!quote()"
+        (click)="create()"
+      >
+        {{busy()?'Reservando…':kind()==='FRIENDLY'?'Organizar amistoso':'Confirmar evento'}} →
+      </button>
+    </footer>
+    @if(quoting()){
+    <p class="fine-print" role="status">Conferindo calendário e custos…</p>
+    }@if(quoteError()){
+    <p class="feedback error" role="status">{{quoteError()}}</p>
+    }
+  </div>
+  }
+  <details class="event-history" [open]="data.bookings.length>0">
+    <summary>Eventos organizados <span>{{data.bookings.length}}</span></summary>
+    <div class="booking-list">
+      @for(event of bookings();track event.id){
+      <article [class.cancelled]="event.status==='CANCELLED'">
+        <time
+          ><b>{{label(event.date,{day:'2-digit'})}}</b
+          >{{label(event.date,{month:'short',year:'numeric'})}}</time
+        >
+        <div class="booking-copy">
+          <small>{{status(event)}}</small
+          ><strong
+            >{{name(event.type)}}@if(event.opponentName){ · {{event.teamName}} ×
+            {{event.opponentName}}}</strong
+          >@if(event.endDate!==event.date){<span
+            >Até {{label(event.endDate,{day:'2-digit',month:'long'})}}</span
+          >}
+          <p>{{event.details||'Reserva registrada no calendário do clube.'}}</p>
+          <span
+            >{{event.cost|currency:'BRL':'symbol':'1.0-0'}} · organização@if(event.revenue){ ·
+            {{event.revenue/2|currency:'BRL':'symbol':'1.0-0'}} de bilheteria por clube}</span
+          >
+        </div>
+        <div class="booking-actions">
+          <button type="button" (click)="navigate.emit(event.date)">Ver no calendário →</button
+          >@if(event.status==='PROPOSED'&&event.opponentId===data.teamId){<button
+            type="button"
+            class="primary"
+            [disabled]="busy()||disabled()"
+            (click)="action(event,true)"
+          >
+            Aceitar amistoso</button
+          >}@if(['PROPOSED','SCHEDULED'].includes(event.status)){<button
+            type="button"
+            class="cancel"
+            [disabled]="busy()||disabled()"
+            (click)="action(event)"
+          >
+            {{event.status==='PROPOSED'&&event.opponentId===data.teamId?'Recusar convite':'Cancelar evento'}}</button
+          >}
+        </div>
+      </article>
+      }@empty{
+      <p class="empty">O clube ainda não organizou eventos nesta liga.</p>
+      }
+    </div>
+  </details>
+  }
+</section>

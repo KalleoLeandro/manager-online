@@ -685,8 +685,15 @@ class MatchdayTests {
         var a = saves.create(new CreateLeagueRequest("Países diferentes", 2, "Brasileiro", brazil.id()));
         var b = saves.join(a.room().inviteCode(), new JoinLeagueRequest("Inglês", english.id()));
         var id = a.room().id();
+        // Reserve cup dates first, then construct this test's isolated simultaneous national round.
+        // Other tests cover the normal cup calendar and its rescheduling of national fixtures.
+        world.synchronize(id);
         db.update(
-            "UPDATE national_fixtures SET match_date=DATE '2026-01-28' WHERE save_id=? AND season_id IN(SELECT id FROM national_seasons WHERE save_id=? AND league_id=1) AND round_number=1",
+            "UPDATE national_fixtures SET match_date=DATE '2026-02-28' WHERE save_id=? AND status='SCHEDULED' AND match_date<=DATE '2026-01-28' AND season_id IN(SELECT id FROM national_seasons WHERE save_id=? AND tournament_id IS NOT NULL)",
+            id, id
+        );
+        db.update(
+            "UPDATE national_fixtures SET match_date=DATE '2026-01-28' WHERE save_id=? AND season_id IN(SELECT id FROM national_seasons WHERE save_id=? AND league_id IN(1,6) AND tournament_id IS NULL) AND round_number=1",
             id,
             id
         );
@@ -786,6 +793,9 @@ class MatchdayTests {
 
     @Autowired
     MatchRepository repository;
+
+    @Autowired
+    WorldCompetitionService world;
 
     @Autowired
     JdbcTemplate db;

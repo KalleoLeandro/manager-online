@@ -3,6 +3,7 @@ package br.com.manager;
 import static org.assertj.core.api.Assertions.*;
 
 import br.com.manager.repository.LocalImageRepository;
+import br.com.manager.repository.StadiumImageRepository;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import org.junit.jupiter.api.Test;
@@ -29,7 +30,7 @@ class ArchitectureTests {
                 .map(field -> field.getType().getName())
                 .toList();
             assertThat(fields).doesNotContain(JdbcTemplate.class.getName());
-            if (!type.equals(LocalImageRepository.class)) assertThat(fields).contains(
+            if (!java.util.Set.of(LocalImageRepository.class, StadiumImageRepository.class).contains(type)) assertThat(fields).contains(
                 NamedParameterJdbcTemplate.class.getName()
             );
         }

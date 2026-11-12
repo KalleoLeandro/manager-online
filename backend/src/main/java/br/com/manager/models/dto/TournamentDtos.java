@@ -3,6 +3,7 @@ package br.com.manager.models.dto;
 import br.com.manager.utils.TournamentRulebooks.Rulebook;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 public final class TournamentDtos {
 
@@ -51,5 +52,24 @@ public final class TournamentDtos {
         String status
     ) {}
 
-    public record Summary(Edition edition, List<Entrant> teams, List<Tie> ties, List<Game> fixtures) {}
+    public record Summary(
+        Edition edition,
+        List<Entrant> teams,
+        List<Tie> ties,
+        List<Game> fixtures,
+        Map<Long, String> groups,
+        List<Standing> standings
+    ) {}
+
+    public record Standing(int stage,String group,int position,long teamId,String name,int played,int wins,int draws,int losses,int gf,int ga,int points){}
+
+    public record Title(
+        long editionId,
+        String competition,
+        int year,
+        String label,
+        String stage,
+        int trophyId,
+        LocalDate date
+    ) {}
 }

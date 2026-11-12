@@ -14,12 +14,12 @@ public class RealtimeConfig implements WebSocketConfigurer {
     private final SaveSocketHandler handler;
     private final String[] origins;
 
-    public RealtimeConfig(
-        SaveSocketHandler handler,
-        @Value("${app.websocket.allowed-origins:http://localhost:4200,http://127.0.0.1:4200}") String[] origins
-    ) {
+    public RealtimeConfig(SaveSocketHandler handler, @Value("${app.websocket.allowed-origins:}") String[] origins) {
         this.handler = handler;
-        this.origins = origins;
+        this.origins = java.util.Arrays.stream(origins)
+            .map(String::trim)
+            .filter(origin -> !origin.isEmpty())
+            .toArray(String[]::new);
     }
 
     @Override

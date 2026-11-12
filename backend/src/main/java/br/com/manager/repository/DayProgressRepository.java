@@ -100,7 +100,7 @@ public class DayProgressRepository {
         );
         // Shared events must not be completed for other managers before their date reaches them.
         db.update(
-            "UPDATE league_calendar_events SET status='COMPLETED' WHERE save_id=:id AND team_id=:team AND event_date=:date AND status='SCHEDULED' AND event_type<>'MATCH'",
+            "UPDATE league_calendar_events SET status='COMPLETED' WHERE save_id=:id AND team_id=:team AND event_date=:date AND status='SCHEDULED' AND event_type<>'MATCH' AND id NOT IN(SELECT calendar_id FROM club_event_calendar)",
             p
         );
         return important > 0;

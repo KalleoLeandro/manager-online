@@ -41,7 +41,49 @@ class PlayerMatchRatingsTests {
         assertThat(p.goals).isEqualTo(1);
         m.varReview = null;
         PlayerMatchRatings.refresh(m);
-        assertThat(p.rating).isEqualTo(7.1);
+        assertThat(p.rating).isEqualTo(7.2);
+    }
+
+    @Test
+    void rewardsDefendingAndGoalkeepingWithoutNeedingGoalsOrAssists() {
+        var defender = new Player();
+        defender.position = "ZAG";
+        defender.minutes = 90;
+        defender.passesCompleted = 32;
+        defender.passesMissed = 4;
+        defender.tackles = 4;
+        defender.interceptions = 5;
+        defender.blockedShots = 2;
+        assertThat(PlayerMatchRatings.calculate(defender)).isGreaterThan(7.5);
+        var keeper = new Player();
+        keeper.position = "GOL";
+        keeper.minutes = 90;
+        keeper.saves = 7;
+        double shutout = PlayerMatchRatings.calculate(keeper);
+        assertThat(shutout).isGreaterThan(8);
+        keeper.goalsAgainst = 3;
+        assertThat(PlayerMatchRatings.calculate(keeper)).isLessThan(shutout - 1.5);
+    }
+
+    @Test
+    void passingAccuracyAndAttackingInvolvementSeparateGoodAndPoorPerformances() {
+        var p = new Player();
+        p.position = "MEI";
+        p.minutes = 90;
+        p.passesCompleted = 40;
+        p.passesMissed = 3;
+        double efficient = PlayerMatchRatings.calculate(p);
+        p.passesMissed = 20;
+        assertThat(PlayerMatchRatings.calculate(p)).isLessThan(efficient - 1.5);
+        p.position = "CA";
+        p.passesCompleted = 0;
+        p.passesMissed = 0;
+        double anonymous = PlayerMatchRatings.calculate(p);
+        p.shots = 3;
+        p.shotsOnTarget = 3;
+        assertThat(PlayerMatchRatings.calculate(p)).isGreaterThan(anonymous + .5);
+        p.minutes = 4;
+        assertThat(PlayerMatchRatings.calculate(p)).isNull();
     }
 
     @Test

@@ -1,0 +1,11 @@
+<dialog #dialog aria-labelledby="incident-heading" aria-describedby="incident-description" (cancel)="$event.preventDefault();close()">
+ <article [class.injury]="incident().type==='INJURY'" [class.red]="incident().type==='RED'">
+  <header><span>{{clock(incident().minute,incident().period)}}</span><span><img appClubCrest [clubId]="incident().teamId" alt="">{{incident().teamName}}</span></header>
+  <div class="incident-symbol" aria-hidden="true">@if(incident().type==='INJURY'){<span class="medical-cross">+</span>}@else{<span class="referee-card"></span>}</div>
+  <h2 id="incident-heading">{{incident().title}}</h2>
+  @if(incident().playerId;as playerId){<app-player-portrait [playerId]="playerId"/>}
+  <h3>{{incident().playerName}}</h3>
+  <p id="incident-description">{{incident().description}}</p>
+  <footer><button type="button" autofocus (click)="close()">Continuar</button><div class="progress" aria-hidden="true"><i></i></div></footer>
+ </article>
+</dialog>

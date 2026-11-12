@@ -280,7 +280,7 @@ public class FinanceRepository {
     public Long nextSeason(String id, long team) {
         return db
             .query(
-                "SELECT season_id FROM national_fixtures WHERE save_id=:id AND (home_team_id=:team OR away_team_id=:team) AND status='SCHEDULED' ORDER BY match_date,id LIMIT 1",
+                "SELECT f.season_id FROM national_fixtures f JOIN national_seasons s ON s.id=f.season_id AND s.save_id=f.save_id WHERE f.save_id=:id AND s.tournament_id IS NULL AND s.format<>'FRIENDLY' AND (f.home_team_id=:team OR f.away_team_id=:team) AND f.status='SCHEDULED' ORDER BY f.match_date,f.id LIMIT 1",
                 params(id, team),
                 (r, n) -> r.getLong(1)
             )

@@ -1,0 +1,5 @@
+@if(profile();as player){
+ <app-player-details [player]="player" [squad]="squad()" [teamName]="team().name" [starting]="live()?.onPitch??false" [assignedPosition]="live()?.assignedPosition||null" [matchStats]="live()" (closed)="closed.emit()"/>
+}@else{
+ <dialog #status aria-labelledby="match-profile-status" (cancel)="cancel($event)"><h2 id="match-profile-status">Ficha do jogador</h2>@if(error()){<p role="alert">{{error()}}</p><button type="button" (click)="reload()">Tentar novamente</button>}@else{<p role="status">Carregando os dados do atleta…</p>}<button type="button" (click)="closed.emit()">Voltar à partida</button></dialog>
+}

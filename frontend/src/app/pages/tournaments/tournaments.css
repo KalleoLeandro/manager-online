@@ -1,0 +1,255 @@
+:host {
+  display: block;
+}
+.world-preview { display:flex; align-items:center; gap:18px; }
+.world-preview app-trophy-image { width:64px; flex-shrink:0; }
+.world-preview p { margin-bottom:0; }
+.cups {
+  color: var(--text, #243a32);
+}
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+h2 {
+  margin: 5px 0;
+  font:
+    700 30px "Barlow Condensed",
+    sans-serif;
+}
+header small {
+  letter-spacing: 0.12em;
+  color: var(--muted, #63816f);
+}
+p {
+  font-size: 13px;
+  line-height: 1.6;
+}
+button {
+  cursor: pointer;
+  border: 1px solid var(--border, #c7dacf);
+  border-radius: 8px;
+  background: var(--surface, #fff);
+  color: inherit;
+  padding: 10px 16px;
+  font: inherit;
+  min-height: 42px;
+}
+button:focus-visible {
+  outline: 3px solid var(--accent, #18714e);
+  outline-offset: 2px;
+}
+.cup-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+  margin: 20px 0;
+}
+.cup-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  padding: 14px;
+}
+.cup-card app-trophy-image {
+  width: 58px;
+  flex-shrink: 0;
+}
+.cup-card span {
+  display: grid;
+  gap: 7px;
+  font-size: 13px;
+}
+.cup-card small {
+  font-size: 11px;
+  color: var(--muted, #698070);
+}
+.cup-card b {
+  font-size: 11px;
+}
+.cup-card.selected,
+.stages button.active {
+  background: var(--accent, #116441);
+  color: var(--accent-ink, #fff);
+}
+.cup-card.selected small {
+  color: inherit;
+}
+.cup-heading {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 16px 0;
+  border-top: 1px solid var(--border, #c7dacf);
+}
+.cup-heading app-trophy-image {
+  width: 90px;
+}
+.cup-heading h3 {
+  margin: 0;
+  font:
+    700 25px "Barlow Condensed",
+    sans-serif;
+}
+.champion {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--accent, #12633f);
+}
+img {
+  width: 28px;
+  height: 30px;
+  object-fit: contain;
+}
+.stages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin: 15px 0;
+}
+.stages button {
+  font-size: 12px;
+}
+.fixtures {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 330px), 1fr));
+  gap: 12px;
+  margin: 18px 0;
+}
+.fixtures article {
+  border: 1px solid var(--border, #c7dacf);
+  background: var(--surface, #fff);
+  border-radius: 9px;
+  overflow: hidden;
+}
+.fixtures article header,
+.fixtures footer {
+  padding: 10px 14px;
+  font-size: 11px;
+  background: #789b8510;
+}
+.fixtures article > div {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 9px;
+  padding: 16px 12px;
+}
+.fixtures article > div span {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+  font-size: 12px;
+}
+.qualified {
+  font-weight: 800;
+}
+.fixtures b {
+  font:
+    700 18px ui-monospace,
+    monospace;
+}
+.notice {
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid var(--border, #c7dacf);
+  background: #8bad9110;
+}
+.participants {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 10px;
+  margin: 15px 0;
+}
+.participants > span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+.participants small {
+  margin-left: auto;
+  font-size: 10px;
+}
+.cups > a {
+  display: inline-block;
+  margin-top: 18px;
+  font-size: 11px;
+}
+.error {
+  color: #b43a3a;
+}
+summary {
+  cursor: pointer;
+  padding: 12px;
+  font-weight: 700;
+}
+@media (max-width: 600px) {
+  header {
+    align-items: flex-start;
+  }
+  .cup-list {
+    grid-template-columns: 1fr 1fr;
+  }
+  .cup-card {
+    flex-direction: column;
+    text-align: center;
+    padding: 12px 8px;
+  }
+  .cup-card app-trophy-image {
+    width: 48px;
+  }
+  .cup-heading h3 {
+    font-size: 22px;
+  }
+}
+
+.group-tables {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr));
+  gap: 14px;
+}
+.group-tables section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px;
+}
+.group-tables h4 {
+  margin: 0 0 12px;
+}
+.table-scroll {
+  overflow: auto;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+th,
+td {
+  padding: 9px 6px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+  font-family: ui-monospace, monospace;
+}
+td:nth-child(2) {
+  font-family: inherit;
+  text-align: left;
+  min-width: 120px;
+}
+td span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+td img {
+  width: 22px;
+  height: 24px;
+}
